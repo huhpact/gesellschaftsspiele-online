@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Stadt Land Fluss</title>
+  <meta name="description" content="Stadt Land Fluss digital – jeder am eigenen Handy, Beitritt per QR-Code.">
+  <meta name="theme-color" content="#c8482f">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='6' y='6' width='88' height='88' rx='20' fill='%23f2ead9' stroke='%233a332a' stroke-width='6'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' font-family='serif' fill='%23a83232'%3ES%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="style.css?v=1.0">
+</head>
+<body>
+  <div class="paper-backdrop" aria-hidden="true"></div>
+  <div class="net-banner" id="net-banner" hidden role="status"></div>
+  <div class="app-shell">
+    <div id="app"></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Lokale Bibliotheken (gleiche Dateien wie beim Kniffelblock) -->
+  <script src="peerjs.min.js"></script>
+  <script src="qrcode.js"></script>
+  <script src="main.js?v=1.0"></script>
+</body>
+</html>
