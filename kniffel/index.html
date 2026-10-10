@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Kniffel Punkteblock</title>
+  <meta name="description" content="Ein digitaler Kniffel-Punktezettel im Stil eines echten Papier-Blocks.">
+  <meta name="theme-color" content="#c8482f">
+  <link rel="manifest" href="/kniffel/manifest.json">
+  <link rel="apple-touch-icon" href="/kniffel/dice.svg">
+	<link rel="icon" href="/kniffel/dice.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kniffel">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/kniffel/style.css?v=1.7">
+</head>
+<body>
+
+  <div class="paper-backdrop" aria-hidden="true"></div>
+
+  <div class="app-shell">
+
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand">
+          <svg class="brand-dice" width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="3" y="3" width="40" height="40" rx="9" fill="#f2ead9" stroke="#3a332a" stroke-width="2.5"/>
+            <circle cx="15" cy="15" r="3.4" fill="#a83232"/>
+            <circle cx="31" cy="15" r="3.4" fill="#3a332a"/>
+            <circle cx="23" cy="23" r="3.4" fill="#3a332a"/>
+            <circle cx="15" cy="31" r="3.4" fill="#3a332a"/>
+            <circle cx="31" cy="31" r="3.4" fill="#a83232"/>
+          </svg>
+          <div class="brand-text">
+            <h1>Kniffel<span class="brand-sub">block</span></h1>
+            <p class="brand-tagline">Dein Punktezettel &mdash; digital, aber wie von Hand geschrieben</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="mode-toggle" id="mode-toggle" role="radiogroup" aria-label="Einfach oder Doppel spielen">
+            <button type="button" class="mode-toggle-option is-active" id="btn-mode-single" role="radio" aria-checked="true" title="Ein Zettel pro Spieler">
+              <span>Einfach</span>
+            </button>
+            <button type="button" class="mode-toggle-option" id="btn-mode-double" role="radio" aria-checked="false" title="Zwei Zettel pro Spieler (Doppel-Kniffel)">
+              <span>Doppel</span>
+            </button>
+          </div>
+          <button type="button" class="btn-icon-label" id="btn-draw-start" title="Startspieler auslosen">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>
+            <span>Startspieler</span>
+          </button>
+          <div class="settings-wrap">
+            <button type="button" class="btn-icon-label" id="btn-settings" aria-haspopup="true" aria-expanded="false" aria-controls="settings-panel" title="Einstellungen">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+              <span>Einstellungen</span>
+            </button>
+            <div class="settings-panel" id="settings-panel" hidden></div>
+          </div>
+          <button type="button" class="btn-icon-label" id="btn-new-game" title="Neues Spiel starten">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            <span>Neues Blatt</span>
+          </button>
+          <button type="button" class="btn-icon-label btn-install hidden" id="btn-install" title="App installieren">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span>App installieren</span>
+          </button>
+        </div>
+      </div>
+      <div class="torn-edge" aria-hidden="true"></div>
+    </header>
+
+    <!-- ===================== MAIN ===================== -->
+    <main class="app-main">
+
+      <!-- Zuschauer-Leiste (nur im Zuschauer-Modus sichtbar) -->
+      <div class="viewer-bar" id="viewer-bar" hidden>
+        <span class="vb-dot" aria-hidden="true"></span>
+        <span class="vb-text" id="vb-text" aria-live="polite"></span>
+        <button type="button" class="vb-switch" id="vb-switch">Wechseln</button>
+      </div>
+
+      <!-- Scoresheet card -->
+      <section class="scorepad-card" aria-label="Kniffel Punktezettel">
+
+        <div class="scorepad-scroll-region">
+          <table class="scorepad-table" id="scorepad-table">
+
+            <!-- ---------- TABLE HEAD ---------- -->
+            <thead>
+              <tr class="row-players">
+                <th class="col-label col-label-head" scope="col">
+                  <div class="add-player-wrap">
+                    <button type="button" class="btn-add-player" id="btn-add-player" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    </button>
+                    <span class="add-player-caption">Spieler</span>
+                  </div>
+                </th>
+                <!-- Player columns injected here by JS -->
+              </tr>
+              <tr class="row-sheets hidden" id="row-sheets">
+                <th class="col-label col-label-head" scope="col"></th>
+                <!-- "Zettel 1" / "Zettel 2" sub-headers injected here by JS, double mode only -->
+              </tr>
+            </thead>
+
+            <!-- ---------- TABLE BODY ---------- -->
+            <tbody id="scorepad-body">
+              <!-- Rows injected by JS (see js/rows-config.js render) -->
+            </tbody>
+
+          </table>
+        </div>
+
+        <!-- fixed corner fold decoration -->
+        <div class="page-corner" aria-hidden="true"></div>
+      </section>
+
+      <!-- Calculate button + legend -->
+      <div class="action-bar">
+        <button type="button" class="btn-calculate" id="btn-calculate">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4v1a4 4 0 0 0 4 4"/><path d="M17 5h3v1a4 4 0 0 1-4 4"/></svg>
+          <span>Auswertung starten</span>
+        </button>
+
+        <div class="group-restore" id="group-restore" hidden>
+          <button type="button" class="btn-group-restore">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg>
+            <span><strong>Letzte Gruppe laden</strong><small class="group-names"></small></span>
+          </button>
+        </div>
+
+        <p class="hint-text" id="empty-state-hint">
+          Klicke oben links auf <strong>&plus;</strong>, um deinen ersten Spieler hinzuzufügen.
+        </p>
+      </div>
+
+      <!-- Rules reference (collapsible) -->
+      <details class="rules-card">
+        <summary>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Punkteübersicht &amp; Regeln
+        </summary>
+        <div class="rules-content">
+          <div class="rules-col">
+            <h3>Oberer Block</h3>
+            <ul>
+              <li><strong>1er&ndash;6er:</strong> Summe der jeweiligen Augenzahl</li>
+              <li><strong>Bonus:</strong> +35 Punkte ab 63 Punkten im oberen Block</li>
+            </ul>
+          </div>
+          <div class="rules-col">
+            <h3>Unterer Block</h3>
+            <ul>
+              <li><strong>Dreierpasch / Viererpasch:</strong> Summe aller Würfel</li>
+              <li><strong>Full House:</strong> 25 Punkte</li>
+              <li><strong>Kleine Straße:</strong> 30 Punkte</li>
+              <li><strong>Große Straße:</strong> 40 Punkte</li>
+              <li><strong>Kniffel:</strong> 50 Punkte &ndash; jeder weitere Kniffel <strong>+50</strong> (bis max. 150)</li>
+              <li><strong>Chance:</strong> Summe aller Würfel</li>
+            </ul>
+          </div>
+          <div class="rules-col">
+            <h3>Tipps</h3>
+            <ul>
+              <li>Die Punkte aktualisieren sich <strong>live</strong>; die Gesamtsumme bleibt bis zur Auswertung verdeckt</li>
+              <li>Kleine Zahl im oberen Block: so viele Würfel dieser Augenzahl brauchst du noch für den Bonus</li>
+              <li>Mit dem <strong>&minus;</strong>-Knopf in der Ecke streichst du ein Feld durch</li>
+              <li><strong>Multiplayer</strong> (Einstellungen): QR-Code zeigen, Mitspieler scannen ihn und sehen nur ihre eigene Spalte</li>
+              <li>Die stark eingefärbte Spalte zeigt, wer als Nächstes dran ist; „Startspieler“ lost den Beginn aus</li>
+            </ul>
+          </div>
+          <div class="rules-col">
+            <h3>Doppel-Modus</h3>
+            <ul>
+              <li>Jeder Spieler füllt <strong>zwei</strong> Zettel gleichzeitig aus</li>
+              <li>Bonus &amp; Zwischensummen gelten pro Zettel</li>
+              <li>Die Gesamtsumme addiert beide Zettel</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+
+    </main>
+
+  
+
+  </div>
+
+  <!-- Toast for feedback messages -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/kniffel/rows-config.js?v=1.7"></script>
+  <script src="/kniffel/main.js?v=1.7"></script>
+</body>
+</html>

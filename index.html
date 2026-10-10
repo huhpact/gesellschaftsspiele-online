@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>gesellschaftsspiele-online.de – Gesellschaftsspiele online: Kniffel, Stadt Land Fluss</title>
+<meta name="description" content="Kostenlose Gesellschaftsspiele im Browser: Kniffel mit Doppel-Modus, Stadt Land Fluss, QR-Code-Multiplayer und Startspieler-Auslosung. Ohne Anmeldung.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Gloria+Hallelujah&family=Gochi+Hand&family=Kalam:wght@400;700&family=Patrick+Hand&family=Special+Elite&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#c8482f">
+<link rel="manifest" href="/kniffel/manifest.json">
+<link rel="apple-touch-icon" href="/kniffel/dice.svg">
+<link rel="icon" href="/kniffel/dice.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kniffel">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body>
+<div class="paper-backdrop"></div>
+<div class="orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#top" aria-label="gesellschaftsspiele-online.de Startseite">
+      <svg width="34" height="34" viewBox="0 0 52 52" aria-hidden="true"><rect x="3" y="9" width="30" height="30" rx="7" fill="var(--white-paper)" stroke="var(--ink-dark)" stroke-width="2.5"/><circle cx="12" cy="18" r="3" fill="var(--scorepad-red)"/><circle cx="18" cy="24" r="3" fill="var(--scorepad-red)"/><circle cx="24" cy="30" r="3" fill="var(--scorepad-red)"/><rect x="26" y="18" width="23" height="23" rx="6" fill="var(--scorepad-red)" stroke="var(--scorepad-red-dark)" stroke-width="2"/><circle cx="33" cy="25" r="2.4" fill="#faf6ea"/><circle cx="42" cy="34" r="2.4" fill="#faf6ea"/></svg>
+      <span>gesellschaftsspiele-online<b>.de</b></span>
+    </a>
+    <nav class="links" id="menu" aria-label="Hauptnavigation">
+      <a href="#spiele">Spiele</a><a href="#features">Features</a><a href="#stadt-land-fluss">Stadt Land Fluss</a><a href="#designs">Designs</a><a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="theme-wrap">
+        <button class="btn ghost sm" id="theme-btn" aria-expanded="false" aria-controls="theme-pop" aria-label="Design wählen">🎨<span class="hide-s"> Design</span></button>
+        <div class="pop" id="theme-pop" hidden>
+          <button class="tp" data-theme="paper"><span class="theme-swatch theme-swatch-paper"><b></b><i></i><u></u></span>Papier</button>
+          <button class="tp" data-theme="grid"><span class="theme-swatch theme-swatch-grid"><b></b><i></i><u></u></span>Kariert</button>
+          <button class="tp" data-theme="coaster"><span class="theme-swatch theme-swatch-coaster"><b></b><i></i><u></u></span>Bierdeckel</button>
+          <button class="tp" data-theme="chalk"><span class="theme-swatch theme-swatch-chalk"><b></b><i></i><u></u></span>Tafel</button>
+        </div>
+      </div>
+      <a class="btn coffee sm" href="https://www.buymeacoffee.com/DEINNAME" target="_blank" rel="noopener" aria-label="Buy me a coffee">☕<span class="hide-s"> Buy me a coffee</span></a>
+      <button class="btn ghost sm burger" id="burger" aria-label="Menü" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero wrap">
+  <div class="hero-text">
+    <span class="eyebrow"><i class="dot"></i> Kostenlos · ohne Anmeldung · im Browser</span>
+    <h1>Der Spieleabend,<br>direkt im <span class="grad">Browser.</span></h1>
+    <p class="lead">Kniffel, Stadt Land Fluss und mehr – ohne Installation, ohne Account. Perfekt für Familie, Freunde und Kneipenrunde, auf Handy, Tablet und Laptop.</p>
+    <div class="cta">
+      <a class="btn primary lg" href="/kniffel/">🎲 Kniffel spielen</a>
+      <a class="btn ghost lg" href="/stadt-land-fluss/">✏️ Stadt Land Fluss</a>
+    </div>
+    <ul class="trust">
+      <li><strong>0 €</strong>kostenlos</li>
+      <li><strong>0</strong>Accounts nötig</li>
+      <li><strong>4</strong>Designs</li>
+      <li><strong>12</strong>Zuschauer per QR</li>
+    </ul>
+  </div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="sheet tilt">
+      <div class="sheet-head"><span>Kniffelblock</span><em>Runde 4</em></div>
+      <div class="mk-wrap"><table class="mk">
+        <thead><tr><th></th><th class="on">Anna</th><th>Ben</th><th>Chris</th></tr></thead>
+        <tbody>
+          <tr><td>Einser</td><td>3</td><td>2</td><td>4</td></tr>
+          <tr><td>Zweier</td><td>8</td><td>6</td><td>10</td></tr>
+          <tr><td>Dreier</td><td>12</td><td>15</td><td>9</td></tr>
+          <tr><td>Full House</td><td>25</td><td>25</td><td>X</td></tr>
+          <tr class="sum"><td>Gesamt</td><td>187</td><td>164</td><td>171</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="float f1">🏆 Bonus +35</div>
+    <div class="float f2"><i class="dot"></i> Anna ist dran</div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="ticker-in">
+  <span>🎲 Doppel-Kniffel</span><span>📱 QR-Multiplayer</span><span>🎰 Zufälliger Startspieler</span><span>✏️ Stadt Land Fluss</span><span>🎨 4 Designs</span><span>👴 Rentner-Modus</span><span>🏆 Siegerehrung</span><span>💾 Letzte Gruppe laden</span>
+  <span>🎲 Doppel-Kniffel</span><span>📱 QR-Multiplayer</span><span>🎰 Zufälliger Startspieler</span><span>✏️ Stadt Land Fluss</span><span>🎨 4 Designs</span><span>👴 Rentner-Modus</span><span>🏆 Siegerehrung</span><span>💾 Letzte Gruppe laden</span>
+</div></div>
+
+<section id="spiele" class="sec wrap">
+  <div class="sec-head">
+    <span class="eyebrow">Spielübersicht</span>
+    <h2>Such dir dein <span class="grad">Spiel</span> aus</h2>
+    <p>Beide Spiele laufen direkt im Browser. Anklicken und loslegen.</p>
+  </div>
+  <div class="games">
+    <article class="game">
+      <div class="gtop g-red"><span class="gicon">🎲</span><span class="gdeco d1">⚀</span><span class="gdeco d2">⚃</span><span class="tag">Beliebt</span></div>
+      <div class="gbody">
+        <h3>Kniffelblock</h3>
+        <p>Der digitale Kniffel-Zettel mit automatischer Berechnung, Bonus und Siegerehrung – wahlweise im Doppel-Modus mit zwei Zetteln pro Spieler.</p>
+        <ul class="meta"><li>👥 1–6+ Spieler</li><li>⏱️ 20–40 Min.</li><li>📱 QR-Multiplayer</li></ul>
+        <a class="btn primary" href="kniffel/">Jetzt spielen →</a>
+      </div>
+    </article>
+    <article class="game">
+      <div class="gtop g-brass"><span class="gicon">✏️</span><span class="gdeco d1">A</span><span class="gdeco d2">M</span><span class="tag">Klassiker</span></div>
+      <div class="gbody">
+        <h3>Stadt Land Fluss</h3>
+        <p>Buchstabe ziehen, Begriffe finden, schneller sein als die anderen. Der Papier-Klassiker für lockere Runden – jetzt ohne Zettel und Stift.</p>
+        <ul class="meta"><li>👥 2–10 Spieler</li><li>⏱️ 15–30 Min.</li><li>📱 QR-Multiplayer</li></ul>
+        <a class="btn primary" href="stadt-land-fluss/">Jetzt spielen →</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="features" class="sec alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Features</span>
+      <h2>Mehr als nur ein <span class="grad">Zettel</span></h2>
+      <p>Die Funktionen, die den Spieleabend wirklich besser machen.</p>
+    </div>
+    <div class="bento">
+      <div class="tile t-wide">
+        <span class="kicker">Kniffel</span><h3>Doppel-Kniffel</h3>
+        <p>Zwei Zettel pro Spieler, gleichzeitig. Bei jedem Wurf entscheidest du, wohin das Ergebnis geschrieben wird – jede Spalte wird einzeln gezählt, am Ende gibt es die Gesamtsumme.</p>
+        <div class="tvis" aria-hidden="true">
+          <div class="seg"><span>Einfach</span><span class="on">Doppel</span></div>
+          <div class="mk-wrap"><table class="mk dbl">
+            <thead><tr><th></th><th colspan="2" class="on">Anna</th><th colspan="2">Ben</th></tr><tr class="sub"><th></th><th>Z1</th><th>Z2</th><th>Z1</th><th>Z2</th></tr></thead>
+            <tbody><tr><td>Einser</td><td>3</td><td>2</td><td>1</td><td>4</td></tr><tr><td>Sechser</td><td>18</td><td>X</td><td>24</td><td>12</td></tr><tr class="sum"><td>Summe</td><td>104</td><td>88</td><td>97</td><td>91</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="tile t-tall">
+        <span class="kicker">Multiplayer</span><h3>QR-Code-Multiplayer</h3>
+        <p>Host zeigt den QR-Code, alle scannen und schauen live zu. Kein Konto, keine App.</p>
+        <div class="tvis" aria-hidden="true"><div class="phone"><div class="vbar"><i class="dot"></i>Anna ist dran</div><svg class="qr" id="qr" viewBox="0 0 29 29"></svg><small>Scannen &amp; mitspielen</small></div></div>
+      </div>
+      <div class="tile">
+        <span class="kicker">Fair</span><h3>Zufälliger Startspieler</h3>
+        <p>Ein Klick lost aus, wer anfängt – ohne Diskussion.</p>
+        <ul class="order" aria-hidden="true"><li>Anna</li><li class="win">Ben <em>🎲 fängt an</em></li><li>Chris</li></ul>
+      </div>
+      <div class="tile">
+        <span class="kicker">Automatisch</span><h3>Alles gerechnet</h3>
+        <p>Oberer Block, Bonus ab 63 Punkten und Gesamtsumme – nie wieder Taschenrechner.</p>
+        <div class="bonus" aria-hidden="true"><b>63</b><span>→</span><b class="ok">+35</b></div>
+      </div>
+    </div>
+    <div class="mini">
+      <div class="mcard"><span>🎨</span><h4>4 Designs</h4><p>Papier, Kariert, Bierdeckel, Tafel.</p></div>
+      <div class="mcard"><span>👴</span><h4>Rentner-Modus</h4><p>Große Schrift, große Felder.</p></div>
+      <div class="mcard"><span>💾</span><h4>Letzte Gruppe laden</h4><p>Gleiche Runde, ein Klick.</p></div>
+      <div class="mcard"><span>🏆</span><h4>Siegerehrung</h4><p>Rangliste mit Podium.</p></div>
+      <div class="mcard"><span>✖️</span><h4>Streichen</h4><p>Fehlwürfe sauber markieren.</p></div>
+      <div class="mcard"><span>⚡</span><h4>Sofort startklar</h4><p>Öffnen und loslegen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="stadt-land-fluss" class="sec wrap">
+  <div class="sec-head">
+    <span class="eyebrow">Stadt Land Fluss</span>
+    <h2>Der Klassiker, <span class="grad">digital</span></h2>
+    <p>Alle kennen es, jetzt ohne Zettel und Stift: Ein Buchstabe, mehrere Kategorien, und wer am schnellsten die besten Begriffe findet, gewinnt.</p>
+  </div>
+  <div class="slf">
+    <div class="slf-vis" aria-hidden="true">
+      <div class="sheet">
+        <div class="slf-top"><span class="letter">M</span><div><strong>Runde 3</strong><small>Buchstabe gezogen</small></div></div>
+        <div class="mk-wrap"><table class="mk slf-t">
+          <thead><tr><th></th><th>Stadt</th><th>Land</th><th>Fluss</th><th>Tier</th><th>Pkt.</th></tr></thead>
+          <tbody>
+            <tr><td>Anna</td><td>München</td><td>Mexiko</td><td>Main</td><td>Maus</td><td class="pt">70</td></tr>
+            <tr><td>Ben</td><td>Mainz</td><td>Mali</td><td>Mosel</td><td>Maus</td><td class="pt">55</td></tr>
+            <tr><td>Chris</td><td>Moskau</td><td>–</td><td>Main</td><td>Marder</td><td class="pt">45</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="slf-text">
+      <ol class="flow">
+        <li><b>1</b><div><h3>Buchstabe ziehen</h3><p>Ein Zufallsbuchstabe entscheidet, mit welchem Anfang alle Begriffe starten müssen.</p></div></li>
+        <li><b>2</b><div><h3>Begriffe eintragen</h3><p>Zu jeder Kategorie fällt dir ein passender Begriff ein – möglichst schnell und möglichst einfallsreich.</p></div></li>
+        <li><b>3</b><div><h3>Punkte auswerten</h3><p>Am Ende der Runde werden die Antworten verglichen und die Punkte vergeben.</p></div></li>
+      </ol>
+      <div class="cats"><span>Stadt</span><span>Land</span><span>Fluss</span><span>Tier</span><span>Beruf</span><span>Name</span><span>Pflanze</span><span>+ eigene</span></div>
+      <div class="points">
+        <div><b>20</b><small>nur du hast diese Antwort</small></div>
+        <div><b>10</b><small>mehrere haben dieselbe Antwort</small></div>
+        <div><b>5</b><small>nur du hast überhaupt eine Antwort</small></div>
+      </div>
+      <a class="btn primary" href="stadt-land-fluss/">Stadt Land Fluss spielen →</a>
+    </div>
+  </div>
+</section>
+
+<section id="so-gehts" class="sec alt">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">So geht’s</span><h2>In 3 Schritten am <span class="grad">Start</span></h2></div>
+    <ol class="steps">
+      <li><b>1</b><h3>Spiel wählen</h3><p>Kniffel oder Stadt Land Fluss – ein Klick genügt.</p></li>
+      <li><b>2</b><h3>Spieler eintragen</h3><p>Namen eingeben oder die letzte Gruppe laden.</p></li>
+      <li><b>3</b><h3>Losspielen</h3><p>Mitspieler per QR-Code einladen und los geht’s.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="designs" class="sec wrap">
+  <div class="sec-head"><span class="eyebrow">Designs</span><h2>Dein Zettel, dein <span class="grad">Stil</span></h2><p>Probier es gleich aus – das Design gilt dann für die ganze Seite.</p></div>
+  <div class="themes">
+    <button class="tcard" data-theme="paper"><span class="theme-swatch theme-swatch-paper"><b></b><i></i><u></u></span><strong>Papier</strong><small>Klassisch &amp; warm</small></button>
+    <button class="tcard" data-theme="grid"><span class="theme-swatch theme-swatch-grid"><b></b><i></i><u></u></span><strong>Kariert</strong><small>Schulheft-Feeling</small></button>
+    <button class="tcard" data-theme="coaster"><span class="theme-swatch theme-swatch-coaster"><b></b><i></i><u></u></span><strong>Bierdeckel</strong><small>Kneipenrunde</small></button>
+    <button class="tcard" data-theme="chalk"><span class="theme-swatch theme-swatch-chalk"><b></b><i></i><u></u></span><strong>Tafel</strong><small>Dunkel &amp; stylisch</small></button>
+  </div>
+</section>
+
+<section class="wrap sec-s">
+  <div class="coffee-box">
+    <span class="cup">☕</span>
+    <div><h2>Gefällt dir gesellschaftsspiele-online.de?</h2><p>Alle Spiele sind kostenlos. Wenn dir die Seite Spaß macht, freue ich mich über einen Kaffee – er hält Server und Entwicklung am Laufen.</p></div>
+    <a class="btn coffee lg" href="https://www.buymeacoffee.com/DEINNAME" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+  </div>
+</section>
+
+<section id="faq" class="sec wrap narrow">
+  <div class="sec-head"><span class="eyebrow">FAQ</span><h2>Häufige <span class="grad">Fragen</span></h2></div>
+  <details><summary>Kostet das etwas?</summary><p>Nein, alle Spiele sind kostenlos und ohne Registrierung nutzbar.</p></details>
+  <details><summary>Was ist der Doppel-Modus bei Kniffel?</summary><p>Jeder Spieler führt zwei Zettel gleichzeitig. Pro Wurf wählst du, in welchen Zettel du einträgst.</p></details>
+  <details><summary>Wie werden die Punkte bei Stadt Land Fluss vergeben?</summary><p>Üblich sind 20 Punkte für eine einzigartige Antwort, 10 Punkte wenn andere dieselbe haben und 5 Punkte, wenn nur du eine Antwort hast.</p></details>
+  <details><summary>Brauchen meine Mitspieler ein Konto?</summary><p>Nein. QR-Code scannen, Namen wählen, zuschauen – mehr nicht.</p></details>
+  <details><summary>Läuft es auf dem Handy?</summary><p>Ja, die Seite ist für Smartphone, Tablet und Desktop gebaut.</p></details>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="fbrand"><strong class="flogo">gesellschaftsspiele-online<b>.de</b></strong><p>Gesellschaftsspiele für den Browser – gemacht mit ♥ und Würfelglück.</p></div>
+    <div><h4>Spiele</h4><a href="/kniffel/">Kniffelblock</a><a href="/stadt-land-fluss/">Stadt Land Fluss</a></div>
+    <div><h4>Seite</h4><a href="#features">Features</a><a href="#designs">Designs</a><a href="#faq">FAQ</a></div>
+    <div><h4>Rechtliches</h4><a href="/impressum.html">Impressum</a><a href="/datenschutz.html">Datenschutz</a><a href="https://www.buymeacoffee.com/DEINNAME" target="_blank" rel="noopener">☕ Kaffee spendieren</a></div>
+  </div>
+  <p class="copy">© <span id="year">2026</span> gesellschaftsspiele-online.de</p>
+</footer>
+<script src="landing.js"></script>
+</body>
+</html>

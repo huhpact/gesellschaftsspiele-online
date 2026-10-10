@@ -1,0 +1,2422 @@
+/* =============================================================================
+   KNIFFELBLOCK — STYLESHEET
+   -----------------------------------------------------------------------------
+   Design language: a real paper Kniffel score pad — warm ivory paper, ruled
+   ledger grid, red "scorepad ink" accents, a typewriter display face for
+   headings and a handwriting face for the numbers players actually enter.
+   Organized in sections: tokens -> reset -> layout -> components -> responsive.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. DESIGN TOKENS
+   ------------------------------------------------------------------------- */
+:root {
+  /* Paper & ink palette */
+  --paper-base:        #f3ead9;
+  --paper-base-2:      #ede2cc;
+  --paper-shadow:      #d9c9a8;
+  --ink-dark:          #3a332a;
+  --ink-soft:          #6b5f4e;
+  --ink-faint:         #9c8e77;
+  --scorepad-red:      #a8342a;
+  --scorepad-red-dark: #7f2620;
+  --brass:             #b8935a;
+  --brass-light:       #d8b478;
+  --line-rule:         #c9b795;
+  --line-rule-strong:  #a08e6a;
+  --row-tint:          #ece0c7;
+  --row-tint-lower:    #e9dfc9;
+  --white-paper:       #faf6ea;
+
+  /* Section accent tints (kept low-saturation, paper-like) */
+  --upper-tint:  #efe6cf;
+  --lower-tint:  #e8ddc4;
+  --grand-tint:  #dcc9a0;
+
+  /* Semantic */
+  --success: #4a7a4a;
+  --danger:  #a8342a;
+
+  /* Typography */
+  --font-display: 'Special Elite', 'Courier New', monospace;
+  --font-hand:    'Caveat', cursive;
+  --font-ui:      'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(58, 51, 42, 0.08), 0 1px 1px rgba(58, 51, 42, 0.06);
+  --shadow-md: 0 4px 10px rgba(58, 51, 42, 0.12), 0 2px 4px rgba(58, 51, 42, 0.08);
+  --shadow-lg: 0 14px 34px rgba(58, 51, 42, 0.20), 0 4px 10px rgba(58, 51, 42, 0.10);
+  --shadow-inset: inset 0 1px 3px rgba(58, 51, 42, 0.18);
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --label-col-width: 190px;
+  --player-col-width: 148px;
+  /* In "Doppel" mode each player splits into two sub-columns (one per
+     sheet); each is narrower than a full single-mode player column but the
+     pair together is a bit wider than one single column, since two sets of
+     numbers need to fit without feeling cramped. */
+  --sheet-col-width: 92px;
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------------
+   2. RESET & BASE
+   ------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  color: var(--ink-dark);
+  background: var(--paper-base-2);
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 { margin: 0; }
+ul { margin: 0; padding: 0; }
+button { font-family: inherit; }
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus everywhere */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--scorepad-red);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   3. PAPER TEXTURE BACKDROP
+   ------------------------------------------------------------------------- */
+.paper-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--paper-base-2);
+  background-image:
+    /* subtle fiber speckle */
+    radial-gradient(rgba(58,51,42,0.05) 0.5px, transparent 0.5px),
+    radial-gradient(rgba(58,51,42,0.035) 0.5px, transparent 0.5px),
+    /* very soft vignette to feel like a photographed desk */
+    radial-gradient(ellipse at 50% 0%, rgba(255,252,242,0.5) 0%, rgba(0,0,0,0) 60%);
+  background-size: 3px 3px, 7px 7px, 100% 100%;
+  background-position: 0 0, 2px 3px, 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   4. APP SHELL / LAYOUT
+   ------------------------------------------------------------------------- */
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(14px, 3vw, 40px) 60px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3vw, 34px);
+}
+
+/* ---------------------------------------------------------------------------
+   5. HEADER
+   ------------------------------------------------------------------------- */
+.app-header {
+  position: relative;
+  padding-top: clamp(20px, 4vw, 40px);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-dice {
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 4px rgba(58,51,42,0.25));
+  transform: rotate(-6deg);
+}
+
+.brand-text h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+  color: var(--ink-dark);
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  color: var(--scorepad-red);
+}
+
+.brand-tagline {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Mode toggle (Einfach / Doppel) — pill-shaped segmented control
+   ------------------------------------------------------------------------- */
+.mode-toggle {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--white-paper);
+  border: 1.5px solid var(--line-rule-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  gap: 2px;
+}
+
+.mode-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border: none;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mode-toggle-option:hover:not(.is-active) {
+  color: var(--ink-dark);
+  background: rgba(168, 52, 42, 0.06);
+}
+
+.mode-toggle-option.is-active {
+  background: var(--scorepad-red);
+  color: #fdf6ea;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--white-paper);
+  border: 1.5px solid var(--line-rule-strong);
+  border-radius: var(--radius-md);
+  color: var(--ink-dark);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-icon-label:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background: var(--btn-hover, #fffdf6);
+}
+
+.btn-icon-label:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-install {
+  background: var(--scorepad-red);
+  border-color: var(--scorepad-red-dark);
+  color: #fdf6ea;
+}
+.btn-install:hover { background: var(--scorepad-red-dark); }
+
+/* ---------------------------------------------------------------------------
+   Rentner-Modus toggle button — independent of the Einfach/Doppel
+   radiogroup (it's a presentation setting, not a game-structure choice),
+   so it's a plain toggle button rather than part of that role="radiogroup".
+   ------------------------------------------------------------------------- */
+.btn-senior-toggle.is-active {
+  background: var(--brass);
+  border-color: #8a6a34;
+  color: #2a2116;
+}
+.btn-senior-toggle.is-active:hover {
+  background: var(--brass-light);
+}
+
+.hidden { display: none !important; }
+
+/* Torn paper strip beneath the header, like tearing off the previous sheet */
+.torn-edge {
+  margin-top: clamp(16px, 3vw, 26px);
+  height: 14px;
+  width: 100%;
+  background:
+    linear-gradient(115deg, transparent 49%, var(--paper-base-2) 50%) 0 0 / 22px 100%,
+    linear-gradient(245deg, transparent 49%, var(--paper-base-2) 50%) 0 0 / 22px 100%;
+  background-color: var(--paper-shadow);
+  opacity: 0.7;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   6. MAIN / SCOREPAD CARD
+   ------------------------------------------------------------------------- */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vw, 28px);
+}
+
+.scorepad-card {
+  position: relative;
+  background:
+    linear-gradient(var(--white-paper), var(--white-paper));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--paper-shadow);
+  padding: clamp(6px, 1.4vw, 10px);
+  /* Both modes keep the names row sticky *to the viewport* (see section 6b
+     and 19c below) rather than inside their own scroll container —
+     position:sticky stops working the moment ANY ancestor clips overflow,
+     and this card would otherwise be exactly such an ancestor.
+     .scorepad-scroll-region already carries a matching border-radius of
+     its own (see below), so the table's corners still get rounded off
+     without this card having to clip anything itself. */
+  overflow: visible;
+}
+
+/* subtle page-curl corner */
+.page-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, transparent 50%, rgba(58,51,42,0.10) 50%);
+  border-radius: 0 var(--radius-lg) 0 0;
+  pointer-events: none;
+}
+
+.scorepad-scroll-region {
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: calc(var(--radius-lg) - 6px);
+  /* Custom scrollbar for the horizontal player scroll */
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass) var(--paper-base);
+}
+
+.scorepad-scroll-region::-webkit-scrollbar { height: 10px; }
+.scorepad-scroll-region::-webkit-scrollbar-track { background: var(--paper-base); border-radius: 8px; }
+.scorepad-scroll-region::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 8px; }
+.scorepad-scroll-region::-webkit-scrollbar-thumb:hover { background: var(--brass-light); }
+
+/* ---------------------------------------------------------------------------
+   7. TABLE — the ledger grid itself
+   ------------------------------------------------------------------------- */
+.scorepad-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: var(--paper-base);
+}
+
+/* Sticky label column so it stays put while player columns scroll */
+.col-label {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: var(--label-col-width);
+  min-width: var(--label-col-width);
+  max-width: var(--label-col-width);
+  background: var(--paper-base);
+  text-align: left;
+  padding: 12px 16px;
+  border-right: 2.5px solid var(--line-rule-strong);
+  box-shadow: 2px 0 6px -2px rgba(58,51,42,0.15);
+}
+
+.col-label-head {
+  background: var(--paper-base-2);
+  vertical-align: middle;
+  border-bottom: 2.5px solid var(--line-rule-strong);
+}
+
+/* Names row stays visible while scrolling the page, outside Rentner-Modus.
+   Rentner-Modus already solves this its own way (a capped-height, self-
+   scrolling .scorepad-scroll-region — see section 19c below), so this is
+   scoped to skip it entirely rather than doubling up two different sticky
+   mechanisms on the same row. Only .row-players (the names) gets this —
+   .row-sheets (the Zettel 1/2 sub-header, Doppel mode only) intentionally
+   scrolls away as usual. */
+body:not(.senior-mode) .row-players th {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  box-shadow: 0 3px 8px rgba(58, 51, 42, 0.22);
+}
+
+/* Same corner conflict as Rentner-Modus (see the z-index 9 rule below):
+   .col-label is already its own always-on sticky column at z-index 5, so
+   where it overlaps the row that's now also sticky (z-index 8), the corner
+   cell needs to out-rank both. */
+body:not(.senior-mode) .row-players th.col-label-head {
+  z-index: 9;
+}
+
+thead th {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Player header cell */
+.col-player-head {
+  min-width: var(--player-col-width);
+  width: var(--player-col-width);
+  background: var(--paper-base-2);
+  border-bottom: 2.5px solid var(--line-rule-strong);
+  border-right: 1px solid var(--line-rule);
+  padding: 10px 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+.col-player-head:last-child { border-right: none; }
+
+/* ---------------------------------------------------------------------------
+   Player color tint — carries each player's "pen color" faintly down their
+   entire column (header + every score/total cell), layered on top of
+   whatever background that row already has (section tint, total-row tint,
+   even/odd stripe, …). This means once someone scrolls so the name header
+   is out of view, the color is still there as a quiet visual anchor for
+   "whose column is this". Kept deliberately subtle in the default theme —
+   Rentner-Modus (below) turns the same mechanism up to a much stronger tint.
+
+   Implemented as a ::after overlay rather than background-image, because
+   several rows (totals, grand total) set `background: … !important` as a
+   shorthand, which resets background-image to none and would silently wipe
+   any tint layered that way. An absolutely-positioned overlay sitting on
+   top of the cell's own background is immune to that and always wins.
+   ------------------------------------------------------------------------- */
+.player-tinted-col {
+  /* isolate: true gives this cell its own stacking context so the ::after's
+     z-index: -1 below is scoped to *this cell only* — it sits behind this
+     cell's own content without needing to touch/override the positioning
+     of any child (e.g. .btn-remove-player, .quick-fill-btn, which set their
+     own position: absolute and must keep doing so untouched). */
+  position: relative;
+  isolation: isolate;
+}
+.player-tinted-col::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--player-tint) 7%, transparent);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   "Doppel" mode — per-player sub-columns (Zettel 1 / Zettel 2)
+   ------------------------------------------------------------------------- */
+
+/* Sub-header row showing "Zettel 1" / "Zettel 2" under each player's name.
+   Hidden entirely in single mode via the .hidden utility class (toggled in JS). */
+.row-sheets th.col-sheet-head {
+  min-width: var(--sheet-col-width);
+  width: var(--sheet-col-width);
+  background: var(--paper-base);
+  border-bottom: 2.5px solid var(--line-rule-strong);
+  border-right: 1px solid var(--line-rule);
+  padding: 5px 6px 8px;
+  text-align: center;
+  vertical-align: middle;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.row-sheets th.col-sheet-head:last-child { border-right: none; }
+.row-sheets th.is-sheet-a { color: var(--scorepad-red); }
+.row-sheets th.is-sheet-b { color: #2f5f8a; }
+
+/* Data-row sub-columns: same idea as .col-player-head, but sized for two
+   per player instead of one. A subtle inner divider (cell-sheet-a's right
+   border) separates the two sheets of the same player, while the divider
+   between two different players stays the normal .line-rule weight. */
+td.cell-sheet-a,
+td.cell-sheet-b {
+  min-width: var(--sheet-col-width);
+  width: var(--sheet-col-width);
+}
+td.cell-sheet-a { border-right: 1px dashed var(--brass); }
+
+/* Merged grand-total cell spans both sub-columns (see JS colSpan) — give it
+   back the full double-width so it doesn't look squeezed. */
+td.cell-merged {
+  min-width: calc(var(--sheet-col-width) * 2);
+}
+
+/* Generic row cell rhythm */
+tbody td {
+  border-bottom: 1px solid var(--line-rule);
+  border-right: 1px solid var(--line-rule);
+  padding: 0;
+  height: 46px;
+}
+tbody td:last-child { border-right: none; }
+
+tbody tr:nth-child(even):not(.row-spacer):not(.row-upper-total):not(.row-lower-total):not(.row-grand-total) td {
+  background: var(--row-tint);
+}
+
+/* Section tinting */
+.row-upper td.col-label,
+.row-upper td.cell-score { background: var(--upper-tint); }
+.row-lower td.col-label,
+.row-lower td.cell-score { background: var(--lower-tint); }
+
+/* keep even/odd tint override consistent within sections */
+tbody tr.row-upper:nth-child(even) td { background: var(--row-upper-even, #ece0c2); }
+tbody tr.row-lower:nth-child(even) td { background: var(--row-lower-even, #e4d8ba); }
+
+/* Category label cell contents */
+.category-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink-dark);
+}
+
+.category-icon {
+  flex-shrink: 0;
+  color: var(--scorepad-red);
+  opacity: 0.85;
+}
+
+.category-hint {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   8. SCORE CELLS & HANDWRITTEN INPUTS
+   ------------------------------------------------------------------------- */
+.cell-score { position: relative; text-align: center; vertical-align: middle; }
+
+.score-input {
+  width: 100%;
+  height: 46px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #274a7a; /* ballpoint-pen blue, contrasts with printed red/black */
+  padding: 0 6px;
+  -moz-appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.score-input::placeholder {
+  color: var(--ink-faint);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+/* Slightly smaller so three-digit scores stay comfortable in the narrower
+   Doppel-mode sub-columns. */
+td.cell-sheet-a .score-input,
+td.cell-sheet-b .score-input {
+  font-size: 1.25rem;
+  padding: 0 3px;
+}
+
+.score-input:focus {
+  outline: none;
+  background: rgba(168, 52, 42, 0.07);
+  box-shadow: inset 0 -2px 0 var(--scorepad-red);
+}
+
+/* Slight per-row "handwriting" tilt for organic feel, alternating direction */
+tbody tr:nth-child(4n+1) .score-input { transform: rotate(-1deg); }
+tbody tr:nth-child(4n+2) .score-input { transform: rotate(0.6deg); }
+tbody tr:nth-child(4n+3) .score-input { transform: rotate(-0.4deg); }
+tbody tr:nth-child(4n)   .score-input { transform: rotate(1deg); }
+.score-input:focus { transform: rotate(0deg); }
+
+/* Fixed-value categories (Full House, Straights, Yahtzee) get a quick-fill chip */
+.fixed-value-row .cell-score {
+  position: relative;
+}
+
+.quick-fill-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 0.62rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  border: 1px solid var(--brass);
+  background: var(--white-paper);
+  color: var(--brass);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  line-height: 1.4;
+}
+.quick-fill-btn:hover { opacity: 1; background: var(--brass); color: #fff; }
+
+/* ---------------------------------------------------------------------------
+   9. BONUS ROW
+   ------------------------------------------------------------------------- */
+.row-bonus td.col-label,
+.row-bonus td.cell-score {
+  background: var(--bonus-row, #f1e2d4);
+}
+
+.bonus-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.bonus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.bonus-badge.is-pending {
+  background: var(--pill-pending, #e5dcc9);
+  color: var(--ink-faint);
+  border: 1px dashed var(--ink-faint);
+}
+
+.bonus-badge.is-earned {
+  background: var(--pill-ok, #dcecdc);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.bonus-badge.is-missed {
+  background: var(--pill-bad, #f3dcd9);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+/* Narrower Doppel-mode sub-columns can't fit "Noch 12 bis Bonus" on one
+   line at normal size — shrink the badge and let it wrap to two lines
+   instead of overflowing into the neighboring cell. */
+td.cell-sheet-a .bonus-badge,
+td.cell-sheet-b .bonus-badge {
+  font-size: 0.62rem;
+  padding: 3px 7px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+}
+td.cell-sheet-a .bonus-cell,
+td.cell-sheet-b .bonus-cell {
+  height: auto;
+  min-height: 46px;
+  padding: 4px 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   10. TOTAL ROWS
+   ------------------------------------------------------------------------- */
+tr.row-upper-total td,
+tr.row-lower-total td {
+  border-top: 2.5px solid var(--line-rule-strong);
+  border-bottom: 2.5px solid var(--line-rule-strong);
+  background: var(--paper-base-2) !important;
+  font-weight: 800;
+  height: 48px;
+}
+
+/* "Summe oben inkl. Bonus" — sits directly under the plain upper total,
+   showing the same figure with the earned bonus folded in. Styled as a
+   quieter sibling of row-upper-total (no top border, since it reads as a
+   continuation of that row) rather than a full peer total row. */
+tr.row-upper-total-with-bonus td {
+  border-bottom: 2.5px solid var(--line-rule-strong);
+  background: var(--subtotal-tint, #ece2cc) !important;
+  font-weight: 700;
+  height: 42px;
+}
+tr.row-upper-total-with-bonus .total-label {
+  color: var(--scorepad-red-dark);
+}
+tr.row-upper-total-with-bonus .total-label svg {
+  color: #b8862f; /* matches the earned-bonus star tone used in the bonus badge */
+}
+tr.row-upper-total-with-bonus .total-value {
+  color: var(--scorepad-red-dark);
+}
+
+tr.row-grand-total td {
+  border-top: 4px double var(--scorepad-red-dark);
+  background: var(--grand-tint) !important;
+  height: 56px;
+}
+
+.total-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-dark);
+  text-transform: uppercase;
+}
+
+.row-grand-total .total-label {
+  color: var(--scorepad-red-dark);
+  font-size: 0.95rem;
+}
+
+.total-value {
+  display: block;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--ink-dark);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.row-grand-total .total-value {
+  font-size: 1.4rem;
+  color: var(--scorepad-red-dark);
+}
+
+/* Pulse animation when totals update */
+@keyframes total-pulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.18); color: var(--scorepad-red); }
+  100% { transform: scale(1); }
+}
+.total-value.just-updated { animation: total-pulse 0.5s ease; }
+
+/* ---------------------------------------------------------------------------
+   11. SPACER ROW
+   ------------------------------------------------------------------------- */
+.row-spacer td {
+  height: 22px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 8px,
+    var(--line-rule) 8px,
+    var(--line-rule) 9px
+  ) !important;
+  border: none !important;
+  padding: 0;
+}
+
+.row-spacer .col-label { background: var(--paper-base) !important; }
+
+/* ---------------------------------------------------------------------------
+   12. PLAYER NAME CELL / ADD PLAYER BUTTON
+   ------------------------------------------------------------------------- */
+.add-player-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-add-player {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(155deg, var(--add-btn-hi, #fdf8ec), var(--paper-base-2));
+  color: var(--scorepad-red-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Ridged / embossed border effect */
+  border: 2px solid var(--brass);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -2px 3px rgba(58,51,42,0.15) inset,
+    var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-add-player:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(155deg, var(--add-btn-hover-a, #fffdf7), var(--add-btn-hover-b, #f6ecd6));
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.8) inset,
+    0 -2px 3px rgba(58,51,42,0.15) inset,
+    var(--shadow-md);
+}
+
+.btn-add-player:active { transform: translateY(0); }
+
+.btn-add-player:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.add-player-caption {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Player name input (shown before Enter is pressed) */
+.player-name-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--brass);
+  background: var(--white-paper);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--ink-dark);
+}
+.player-name-input:focus {
+  outline: none;
+  border-color: var(--scorepad-red);
+  box-shadow: 0 0 0 3px rgba(168,52,42,0.15);
+}
+
+/* Player name display (shown after Enter) */
+.player-name-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+  cursor: text;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  word-break: break-word;
+}
+.player-name-display:hover {
+  background: rgba(168,52,42,0.06);
+}
+.player-name-display .rename-icon {
+  opacity: 0;
+  color: var(--ink-faint);
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+.player-name-display:hover .rename-icon { opacity: 0.7; }
+
+.player-header-cell {
+  position: relative;
+}
+
+.btn-remove-player {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--scorepad-red);
+  background: var(--white-paper);
+  color: var(--scorepad-red);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.player-header-cell:hover .btn-remove-player,
+.btn-remove-player:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-remove-player:hover {
+  background: var(--scorepad-red);
+  color: #fff;
+}
+
+.player-color-flag {
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   13. ACTION BAR (Calculate button + hint)
+   ------------------------------------------------------------------------- */
+.action-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.btn-calculate {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  color: #fdf6ea;
+  background: linear-gradient(160deg, var(--scorepad-red), var(--scorepad-red-dark));
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-calculate:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  filter: brightness(1.05);
+}
+
+.btn-calculate:active { transform: translateY(0); }
+
+.btn-calculate.is-calculating svg {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.hint-text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  max-width: 480px;
+}
+
+.hint-text strong {
+  color: var(--scorepad-red);
+  font-size: 1.05em;
+}
+
+/* ---------------------------------------------------------------------------
+   14. RULES DETAILS/SUMMARY CARD
+   ------------------------------------------------------------------------- */
+.rules-card {
+  background: var(--white-paper);
+  border: 1px solid var(--paper-shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 4px 6px;
+}
+
+.rules-card summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+}
+.rules-card summary::-webkit-details-marker { display: none; }
+.rules-card summary svg { color: var(--scorepad-red); flex-shrink: 0; }
+
+.rules-card[open] summary {
+  border-bottom: 1px dashed var(--line-rule);
+}
+
+.rules-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 18px 22px 22px;
+}
+
+.rules-col h3 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--scorepad-red-dark);
+  margin-bottom: 10px;
+}
+
+.rules-col ul { display: flex; flex-direction: column; gap: 7px; }
+.rules-col li {
+  list-style: none;
+  font-size: 0.87rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  padding-left: 14px;
+  position: relative;
+}
+.rules-col li::before {
+  content: '\2022';
+  position: absolute;
+  left: 0;
+  color: var(--brass);
+  font-weight: 700;
+}
+.rules-col li strong { color: var(--ink-dark); }
+
+/* ---------------------------------------------------------------------------
+   15. FOOTER
+   ------------------------------------------------------------------------- */
+.app-footer {
+  text-align: center;
+  padding-top: 6px;
+}
+.app-footer p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------------------------
+   16. TOAST NOTIFICATION
+   ------------------------------------------------------------------------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink-dark);
+  color: var(--white-paper);
+  padding: 13px 22px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 100;
+  max-width: min(90vw, 420px);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.toast.is-success { background: #2f4a2f; }
+.toast.is-error { background: var(--scorepad-red-dark); }
+
+/* ---------------------------------------------------------------------------
+   17. EMPTY STATE (no players yet)
+   ------------------------------------------------------------------------- */
+.empty-state-row td {
+  padding: 40px 20px !important;
+  text-align: center;
+  color: var(--ink-faint);
+  font-style: italic;
+  font-size: 0.9rem;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* ---------------------------------------------------------------------------
+   18. RENTNER-MODUS (senior / accessibility mode)
+   -----------------------------------------------------------------------------
+   An orthogonal presentation mode (toggled independently of Einfach/Doppel,
+   see main.js -> toggleSeniorMode) built for players who need things bigger,
+   bolder, higher-contrast, and easier to keep track of at a glance. Every
+   rule below is scoped under body.senior-mode so none of it affects the
+   default look. Four things change, matching the request point for point:
+     a) background tints (player color + section tints) go from decorative
+        to strongly visible, even at a glance / with poor eyesight
+     b) type gets larger and heavier throughout
+     c) the player-name header row (and, in Doppel mode, the Zettel 1/2
+        sub-header) stays pinned to the top of the viewport while the sheet
+        scrolls, so it's always clear whose column is whose
+     d) hard rules separate every column, plus extra entry/recognition aids:
+        a bigger tap target on inputs, a visible current-row hover cue, and
+        the "durchgestrichen" (cross out this box) toggle become available
+   ------------------------------------------------------------------------- */
+
+/* --- a) Strong background tints ------------------------------------------ */
+
+/* The player-color overlay (see .player-tinted-col in section 7) jumps from
+   a barely-there 7% wash to a strong, unmistakable tint. */
+body.senior-mode .player-tinted-col::after {
+  background: color-mix(in srgb, var(--player-tint) 34%, transparent);
+}
+
+/* Upper/lower section tints get punched up the same way, and the even/odd
+   in-section stripe gets a matching boost so the rhythm of the sheet stays
+   readable at a glance rather than blending into a single wash. */
+body.senior-mode .row-upper td.col-label,
+body.senior-mode .row-upper td.cell-score { background: #e2cf9c; }
+body.senior-mode .row-lower td.col-label,
+body.senior-mode .row-lower td.cell-score { background: #d6c193; }
+body.senior-mode tbody tr.row-upper:nth-child(even) td { background: #d9c284; }
+body.senior-mode tbody tr.row-lower:nth-child(even) td { background: #cab576; }
+body.senior-mode .row-bonus td.col-label,
+body.senior-mode .row-bonus td.cell-score { background: #e6c9a4; }
+
+/* --- b) Larger, bolder type everywhere ------------------------------------ */
+
+body.senior-mode {
+  font-size: 1.08rem;
+}
+
+body.senior-mode .category-label {
+  font-size: 1.14rem;
+  font-weight: 800;
+  gap: 12px;
+}
+body.senior-mode .category-icon svg { width: 22px; height: 22px; }
+body.senior-mode .category-hint {
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-style: normal;
+  color: var(--ink-dark);
+  opacity: 0.75;
+}
+
+body.senior-mode .score-input {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a3358; /* darker, higher-contrast ballpoint blue */
+}
+body.senior-mode td.cell-sheet-a .score-input,
+body.senior-mode td.cell-sheet-b .score-input {
+  font-size: 1.5rem;
+}
+body.senior-mode .score-input::placeholder {
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
+body.senior-mode .total-label {
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+body.senior-mode .total-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+body.senior-mode .row-grand-total .total-value {
+  font-size: 1.85rem;
+}
+body.senior-mode .row-upper-total-with-bonus .total-value {
+  font-size: 1.3rem;
+}
+
+body.senior-mode .bonus-cell,
+body.senior-mode .bonus-badge {
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 6px 14px;
+}
+
+body.senior-mode .player-name-display,
+body.senior-mode .player-name-input {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+body.senior-mode .quick-fill-btn {
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  opacity: 0.85;
+}
+
+/* Bigger row height gives the bigger type room to breathe and gives fingers
+   (not just eyes) an easier target. */
+body.senior-mode tbody td { height: 64px; }
+body.senior-mode .score-input { height: 64px; }
+body.senior-mode tr.row-upper-total td,
+body.senior-mode tr.row-lower-total td { height: 66px; }
+body.senior-mode tr.row-upper-total-with-bonus td { height: 58px; }
+body.senior-mode tr.row-grand-total td { height: 76px; }
+body.senior-mode .bonus-cell { height: 64px; }
+
+/* Handwriting tilt reads as "messy" at this size/weight — keep every input
+   perfectly level so nothing looks harder to read than it needs to. */
+body.senior-mode tbody tr .score-input { transform: none !important; }
+
+/* --- c) Sticky header row -------------------------------------------------- */
+/* Sticky positioning is applied at the individual <th> level, not on
+   <thead> itself — browser support for position:sticky on table row-group
+   elements (thead/tbody) is inconsistent, while sticky cells (th/td) are
+   universally supported and are the standard technique for sticky table
+   headers.
+
+   This used to run its own capped-height, self-scrolling
+   .scorepad-scroll-region (max-height + overflow-y: auto), so the page
+   itself never scrolled — only this one div did. That's gone: the page
+   now scrolls normally here too, same mechanism as normal mode (see
+   section 6b above), just with only the names row (.row-players) kept
+   sticky. The reasons for removing it:
+     - Scrolling inside a small inner box, separate from the rest of the
+       page, is a worse experience than just scrolling the page — doubly
+       so for the audience Rentner-Modus is built for.
+     - It meant TWO header rows stacked and both sticky (names +, in
+       Doppel mode, "Zettel 1/2"), which at senior mode's larger 64-76px
+       row heights could eat a big chunk of a phone's screen before a
+       single data row was visible.
+   Only .row-players stays sticky now — .row-sheets (the Zettel 1/2
+   sub-header, Doppel mode only) intentionally scrolls away like any other
+   row, matching the choice already made for normal mode. */
+
+body.senior-mode .row-players th {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  box-shadow: 0 3px 8px rgba(58, 51, 42, 0.28);
+}
+
+/* The sticky corner (label column × sticky header row) needs to out-rank
+   both the plain sticky column (z-index 5) and the plain sticky header row
+   (z-index 8) above. Matched to (and exceeding) their specificity
+   explicitly — a selector with a lower z-index number but higher
+   specificity would otherwise win regardless of which number is bigger. */
+body.senior-mode .row-players th.col-label-head {
+  z-index: 9;
+}
+
+/* --- d) Hard column dividers + entry/recognition aids ---------------------- */
+
+body.senior-mode tbody td,
+body.senior-mode thead th {
+  border-right: 3px solid var(--ink-dark);
+}
+body.senior-mode .col-label {
+  border-right: 4px solid var(--ink-dark);
+}
+body.senior-mode td.cell-sheet-a {
+  border-right: 3px dashed var(--scorepad-red-dark);
+}
+body.senior-mode tbody tr:not(.row-spacer) td {
+  border-bottom: 2px solid var(--line-rule-strong);
+}
+body.senior-mode tr.row-upper-total td,
+body.senior-mode tr.row-lower-total td {
+  border-top: 4px solid var(--ink-dark);
+  border-bottom: 4px solid var(--ink-dark);
+}
+body.senior-mode tr.row-grand-total td {
+  border-top: 6px double var(--scorepad-red-dark);
+}
+
+/* Hovering/focusing anywhere in a data row highlights that whole row, so
+   it's easy to keep your place when looking back and forth between the
+   dice and the sheet. */
+body.senior-mode tbody tr:not(.row-spacer):not(.empty-state-row):hover td,
+body.senior-mode tbody tr:not(.row-spacer):not(.empty-state-row):focus-within td {
+  box-shadow: inset 0 0 0 9999px rgba(168, 52, 42, 0.10);
+}
+
+body.senior-mode .score-input:focus {
+  background: rgba(168, 52, 42, 0.14);
+  box-shadow: inset 0 -4px 0 var(--scorepad-red);
+}
+
+/* "Durchgestrichen" (strike-out) toggle — v1.2: in jedem Modus verfügbar;
+   a clear small button sits in the corner of every editable
+   cell so a category that can't be used this round can be crossed out,
+   same as on a paper sheet, instead of just left blank (which reads as
+   "not filled in yet" rather than "deliberately skipped"). */
+.strike-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 4px;
+  left: 4px; /* top-left corner; the quick-fill chip (fixed-value rows) sits
+                top-right, so the two never overlap */
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-dark);
+  background: rgba(250, 246, 234, 0.95);
+  color: var(--ink-dark);
+  cursor: pointer;
+  opacity: 0.5;
+  z-index: 3;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.cell-score:hover .strike-toggle-btn,
+.strike-toggle-btn:focus-visible {
+  opacity: 1;
+}
+.strike-toggle-btn[aria-pressed="true"] {
+  opacity: 1;
+  background: var(--scorepad-red-dark);
+  border-color: var(--scorepad-red-dark);
+  color: #fdf6ea;
+}
+
+/* Struck-out cell: a real diagonal line drawn across the whole box, the
+   way someone would actually cross out a box on a paper score sheet —
+   deliberately NOT relying on text-decoration on the input's value, since
+   a struck cell's value is always cleared (see main.js strike toggle
+   handler), so there would be no visible text left to "strike through".
+   Drawn as a ::before on the cell itself (already position:relative +
+   isolation:isolate via .player-tinted-col, so this layers in safely
+   without needing any extra positioning setup). */
+.cell-score.is-struck {
+  background: rgba(58, 51, 42, 0.12);
+}
+.cell-score.is-struck::before {
+  content: '';
+  position: absolute;
+  inset: 10px 8px;
+  z-index: 2; /* above the ::after tint (-1) and the input, below the strike-toggle-btn */
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 1.5px), var(--scorepad-red-dark) calc(50% - 1.5px), var(--scorepad-red-dark) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
+    linear-gradient(to top right, transparent calc(50% - 1.5px), var(--scorepad-red-dark) calc(50% - 1.5px), var(--scorepad-red-dark) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+  opacity: 0.75;
+  pointer-events: none;
+}
+.cell-score.is-struck .score-input {
+  color: var(--ink-faint);
+  opacity: 0.5;
+}
+.cell-score.is-struck .score-input::placeholder {
+  opacity: 0.3;
+}
+/* A crossed-out box's own quick-fill chip (fixed-value rows) would be
+   confusing to leave clickable — hide it while struck. */
+.cell-score.is-struck .quick-fill-btn { display: none; }
+
+/* Toggle buttons (mode switch, install, new game, senior mode itself) grow
+   a little too, since they're part of "things you need to tap accurately". */
+body.senior-mode .mode-toggle-option,
+body.senior-mode .btn-icon-label {
+  font-size: 1rem;
+  padding: 12px 18px;
+}
+body.senior-mode .btn-add-player {
+  width: 54px;
+  height: 54px;
+}
+body.senior-mode .add-player-caption {
+  font-size: 0.85rem;
+}
+
+/* ---------------------------------------------------------------------------
+   19. RESPONSIVE — TABLET
+   ------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  :root {
+    --label-col-width: 156px;
+    --player-col-width: 128px;
+  }
+
+  .rules-content {
+    grid-template-columns: 1fr;
+  }
+
+  .header-inner {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .brand { justify-content: center; }
+}
+
+/* ---------------------------------------------------------------------------
+   20. RESPONSIVE — MOBILE
+   ------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  :root {
+    --label-col-width: 128px;
+    --player-col-width: 112px;
+  }
+
+  .app-shell { padding-bottom: 40px; }
+
+  .brand-text h1 { font-size: 1.35rem; }
+  .brand-tagline { font-size: 0.78rem; }
+  .brand-dice { width: 38px; height: 38px; }
+
+  /* Every icon-label header button collapses to icon-only on narrow
+     screens EXCEPT the senior-mode toggle: its icon isn't a universally
+     recognized symbol the way a refresh arrow or download icon is, and
+     hiding the label on an accessibility feature would undermine the
+     feature's own purpose. Its label stays, its icon is dropped instead
+     (see .btn-senior-toggle svg below) to keep it compact. */
+  .header-actions .btn-icon-label span { display: none; }
+  .btn-icon-label { padding: 10px; }
+  .btn-senior-toggle { padding: 10px 14px; }
+  .btn-senior-toggle svg { display: none; }
+
+  .category-label { font-size: 0.8rem; gap: 6px; }
+  .category-hint { display: none; }
+
+  .score-input { font-size: 1.25rem; }
+
+  .btn-calculate {
+    width: 100%;
+    justify-content: center;
+    padding: 15px 20px;
+    font-size: 0.98rem;
+  }
+
+  .col-label { padding: 10px 10px; }
+
+  .total-label { font-size: 0.72rem; gap: 6px; }
+  .total-value { font-size: 1rem; }
+  .row-grand-total .total-value { font-size: 1.2rem; }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --label-col-width: 110px;
+    --player-col-width: 100px;
+  }
+  .category-label span:not(.category-icon) { font-size: 0.72rem; }
+}
+
+/* ---------------------------------------------------------------------------
+   21. PRINT (bonus: lets someone print an actual physical copy) x
+   ------------------------------------------------------------------------- */
+@media print {
+  .app-header .header-actions,
+  .action-bar .btn-calculate,
+  .rules-card,
+  .app-footer,
+  .btn-remove-player,
+  .toast,
+  .add-player-caption { display: none !important; }
+
+  body { background: #fff; }
+  .paper-backdrop { display: none; }
+  .scorepad-card { box-shadow: none; border: 1px solid #999; }
+}
+/* ===========================================================================
+   VERSION 1.2
+   =========================================================================== */
+
+/* ---- Durchstreichen: Größe im Rentner-Modus ------------------------------- */
+body.senior-mode .strike-toggle-btn { width: 26px; height: 26px; opacity: 0.85; border-width: 2px; }
+
+/* ---- Bonus-Hinweis im oberen Block ("3×") -------------------------------- */
+.need-hint {
+  position: absolute;
+  right: 5px;
+  bottom: 2px;
+  z-index: 1;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.need-hint:empty { display: none; }
+.need-hint.is-more,
+.need-hint.is-bad  { color: var(--danger); }
+.need-hint.is-less,
+.need-hint.is-ok   { color: var(--success); }
+.is-struck .need-hint { display: none; }
+body.senior-mode .need-hint { font-size: 0.78rem; right: 7px; bottom: 3px; }
+
+/* ---- Verdeckte Gesamtsumme: unscharfe Ziffern + Schloss ------------------- */
+.total-value.is-censored { display: flex; align-items: center; justify-content: center; }
+.censor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  color: var(--scorepad-red-dark);
+}
+.censor-digits {
+  filter: blur(7px);
+  opacity: 0.5;
+  user-select: none;
+  animation: censor-breathe 3s ease-in-out infinite;
+}
+.censor-lock {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0.85;
+}
+@keyframes censor-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.6; } }
+@keyframes reveal-pop {
+  0%   { transform: scale(0.4); opacity: 0; filter: blur(8px); }
+  60%  { transform: scale(1.25); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
+}
+.total-value.just-revealed { animation: reveal-pop 0.8s cubic-bezier(.2,1.3,.4,1); }
+
+/* ---- Auswertung-Button: Brand-Rot, dezenter Glanz -------------------------- */
+.btn-calculate { position: relative; overflow: hidden; }
+.btn-calculate::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.28), transparent);
+  transform: skewX(-20deg);
+  animation: btn-shine 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes btn-shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+
+/* ===========================================================================
+   SIEGEREHRUNG (Papier-Look, passend zum Hauptblatt)
+   =========================================================================== */
+body.ceremony-open { overflow: hidden; }
+
+.ceremony {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  color: var(--ink-dark);
+  font-family: var(--font-ui);
+  background-color: var(--paper-base-2);
+  background-image:
+    radial-gradient(rgba(58,51,42,0.05) 0.5px, transparent 0.5px),
+    radial-gradient(rgba(58,51,42,0.035) 0.5px, transparent 0.5px),
+    radial-gradient(ellipse at 50% 0%, rgba(255,252,242,0.6) 0%, rgba(0,0,0,0) 60%);
+  background-size: 3px 3px, 7px 7px, 100% 100%;
+  background-position: 0 0, 2px 3px, 0 0;
+  animation: cer-in 0.45s ease both;
+  outline: none;
+}
+.ceremony.is-closing { animation: cer-out 0.3s ease forwards; pointer-events: none; }
+@keyframes cer-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cer-out { to { opacity: 0; } }
+
+.cer-confetti { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+.cer-flash { position: absolute; inset: 0; z-index: 6; background: #fffaf0; opacity: 0; pointer-events: none; }
+.cer-flash.go { animation: cer-flash 0.6s ease-out; }
+@keyframes cer-flash { 0% { opacity: 0.6; } 100% { opacity: 0; } }
+
+/* dezentes Schließen-Kreuz */
+.cer-close {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 10;
+  width: 40px; height: 40px;
+  padding: 0 0 3px;
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 1.9rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.cer-close:hover, .cer-close:focus-visible { opacity: 1; color: var(--ink-dark); }
+
+.cer-stage {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  width: min(1000px, 100%);
+  padding: clamp(50px, 8vh, 72px) 16px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vh, 20px);
+  overflow-y: auto;
+}
+
+.cer-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 5vw, 3rem);
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: var(--scorepad-red-dark);
+  opacity: 0;
+  transform: translateY(10px);
+}
+.cer-title.is-in { animation: cer-title-in 0.8s ease forwards; }
+@keyframes cer-title-in { to { opacity: 1; transform: none; } }
+
+.cer-subtitle {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3.4vw, 2.1rem);
+  min-height: 1.5em;
+  text-align: center;
+  color: var(--ink-soft);
+}
+.cer-subtitle b { color: var(--scorepad-red-dark); }
+.cer-subtitle.swap { animation: cer-swap 0.4s ease; }
+@keyframes cer-swap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---- Treppchen ------------------------------------------------------------ */
+.cer-podium {
+  --ph: clamp(110px, 25vh, 220px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(6px, 2vw, 16px);
+  width: 100%;
+}
+.cer-slot {
+  flex: 1 1 0;
+  max-width: 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.cer-slot.rank-1 { --block-h: var(--ph); }
+.cer-slot.rank-2 { --block-h: calc(var(--ph) * 0.72); }
+.cer-slot.rank-3 { --block-h: calc(var(--ph) * 0.52); }
+
+.cer-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding-bottom: 8px;
+  opacity: 0;
+  transform: translateY(-110px) scale(0.7);
+}
+.cer-slot.is-revealed .cer-person { animation: cer-drop 0.85s cubic-bezier(.3,1.4,.5,1) forwards; }
+@keyframes cer-drop { to { opacity: 1; transform: none; } }
+
+.cer-medal { font-size: clamp(2rem, 5.5vw, 3.2rem); filter: drop-shadow(0 3px 5px rgba(58,51,42,0.3)); }
+.cer-name {
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  line-height: 1.15;
+  word-break: break-word;
+  padding-bottom: 4px;
+  border-bottom: 3px solid var(--pc, var(--brass));
+}
+.cer-score { font-weight: 800; font-size: clamp(1.1rem, 2.8vw, 1.7rem); color: var(--scorepad-red-dark); font-variant-numeric: tabular-nums; }
+.cer-score small { font-size: 0.5em; font-weight: 600; color: var(--ink-soft); }
+.cer-slot.rank-1 .cer-name { font-size: clamp(1.15rem, 3vw, 2rem); }
+.cer-slot.rank-1 .cer-score { font-size: clamp(1.4rem, 3.6vw, 2.3rem); }
+
+.cer-block {
+  height: var(--block-h);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 8px;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  color: var(--ink-faint);
+  background: rgba(58,51,42,0.04);
+  border: 2px dashed var(--line-rule-strong);
+  border-bottom: none;
+  transition: background 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+}
+.cer-slot.is-spot .cer-block { animation: cer-spot 0.55s ease-in-out infinite alternate; }
+@keyframes cer-spot {
+  from { box-shadow: 0 0 0 rgba(168,52,42,0); }
+  to   { box-shadow: 0 0 26px 2px rgba(168,52,42,0.35); background: rgba(168,52,42,0.08); }
+}
+.cer-slot.is-revealed .cer-block {
+  border: 2px solid rgba(58,51,42,0.18);
+  border-bottom: none;
+  color: #3a2a08;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+  box-shadow: 0 -4px 16px rgba(58,51,42,0.16), inset 0 2px 0 rgba(255,255,255,0.55);
+}
+.cer-slot.rank-1.is-revealed .cer-block { background: linear-gradient(180deg, #f3d887, #d9a93a 60%, #b9801a); }
+.cer-slot.rank-2.is-revealed .cer-block { background: linear-gradient(180deg, #f2f2f0, #c4c6c9 60%, #959aa1); }
+.cer-slot.rank-3.is-revealed .cer-block { background: linear-gradient(180deg, #e9b58c, #c27b43 60%, #8c5224); }
+
+/* ---- Plätze ab 4 ---------------------------------------------------------- */
+.cer-rest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(540px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cer-rest-item {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--white-paper);
+  border: 1px solid var(--line-rule);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+}
+.cer-rest-item.is-in.from-left  { animation: cer-slide-l 0.55s cubic-bezier(.2,1.1,.4,1) forwards; }
+.cer-rest-item.is-in.from-right { animation: cer-slide-r 0.55s cubic-bezier(.2,1.1,.4,1) forwards; }
+@keyframes cer-slide-l { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+@keyframes cer-slide-r { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: none; } }
+.cer-rest-rank { font-family: var(--font-display); font-size: 1.3rem; color: var(--scorepad-red-dark); }
+.cer-rest-name { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; min-width: 0; word-break: break-word; }
+.cer-rest-name i { flex: none; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.cer-rest-score { font-weight: 800; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.cer-rest-score small { font-size: 0.65em; font-weight: 600; color: var(--ink-soft); }
+
+/* ---- Aktionen am Ende ----------------------------------------------------- */
+.cer-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.cer-actions.is-in { opacity: 1; pointer-events: auto; transform: none; }
+.cer-action {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.98rem;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.cer-action:hover { transform: translateY(-2px); background: rgba(58,51,42,0.06); }
+.cer-action-primary { background: linear-gradient(160deg, var(--scorepad-red), var(--scorepad-red-dark)); color: #fdf6ea; border-color: transparent; box-shadow: var(--shadow-md); }
+.cer-action-primary:hover { background: linear-gradient(160deg, var(--scorepad-red), var(--scorepad-red-dark)); filter: brightness(1.08); }
+
+.cer-hint-unused {
+  position: absolute;
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  left: 0; right: 0;
+  z-index: 2;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .cer-rest-item { grid-template-columns: 34px 1fr auto; padding: 8px 12px; }
+  .cer-name { font-size: 0.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-calculate::after, .censor-digits { animation: none !important; }
+}
+@media print { .ceremony { display: none !important; } }
+
+/* ---- Navigationspfeile (Siegerehrung) ------------------------------------- */
+.cer-nav {
+  position: absolute;
+  bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-rule-strong);
+  background: rgba(250,246,234,0.85);
+  color: var(--ink-soft);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.cer-prev { left: 18px; }
+.cer-next { right: 18px; }
+.cer-nav:hover:not(:disabled) { background: var(--white-paper); color: var(--ink-dark); transform: scale(1.07); }
+.cer-nav:disabled { opacity: 0.22; cursor: default; }
+.cer-next.is-ready { color: var(--scorepad-red-dark); border-color: var(--scorepad-red); animation: cer-nudge 1.6s ease-in-out infinite; }
+@keyframes cer-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+/* Endzustand ohne Animation (beim Zurückgehen) */
+.cer-title.is-in.instant { animation: none; opacity: 1; transform: none; }
+.cer-slot.is-revealed.instant .cer-person { animation: none; opacity: 1; transform: none; }
+.cer-rest-item.is-in.instant { animation: none; opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .cer-next.is-ready { animation: none; } }
+
+/* ===========================================================================
+   VERSION 1.3
+   =========================================================================== */
+
+/* ---- Wer ist dran: kleine farbige Spaltenmarkierung ----------------------- */
+.player-header-cell .turn-marker {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 56%;
+  height: 5px;
+  border-radius: 5px 5px 0 0;
+  background: var(--player-tint, var(--scorepad-red));
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.2);
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(.2,1.3,.4,1);
+  pointer-events: none;
+}
+.player-header-cell.is-turn .turn-marker {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
+  animation: turn-pulse 2.2s ease-in-out 0.4s infinite;
+}
+@keyframes turn-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .player-header-cell.is-turn .turn-marker { animation: none; } }
+
+/* ---- Einstellungen-Panel ------------------------------------------------- */
+.settings-wrap { position: relative; }
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: min(330px, 88vw);
+  padding: 14px 16px 8px;
+  background: var(--white-paper);
+  border: 1.5px solid var(--line-rule-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  animation: panel-in 0.18s ease;
+}
+.settings-panel[hidden] { display: none; }
+@keyframes panel-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.settings-section + .settings-section { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line-rule); }
+.settings-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+.btn-icon-label.is-active#btn-settings { background: var(--white-paper); }
+
+.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-bottom: 6px; }
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 6px 2px; border-radius: 10px;
+  border: 2px solid transparent; background: transparent;
+  color: var(--ink-soft); cursor: pointer; font-family: var(--font-ui);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.theme-option:hover { background: rgba(127,127,127,0.1); }
+.theme-option.is-active { border-color: var(--scorepad-red); color: var(--ink-dark); }
+.theme-name { font-size: 0.7rem; font-weight: 600; }
+.switch-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 2px; cursor: pointer; font-size: 0.92rem; font-weight: 600; color: var(--ink-dark); }
+.switch-row small { display: block; margin-top: 2px; font-weight: 400; font-size: 0.74rem; color: var(--ink-faint); }
+.switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+.switch-ui { position: relative; flex: none; width: 42px; height: 24px; border-radius: 999px; background: var(--line-rule); transition: background 0.2s ease; }
+.switch-ui::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--white-paper); box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease; }
+.switch-row input:checked + .switch-ui { background: var(--scorepad-red); }
+.switch-row input:checked + .switch-ui::after { transform: translateX(18px); }
+.switch-row input:focus-visible + .switch-ui { outline: 2px solid var(--scorepad-red); outline-offset: 2px; }
+.switch-row input:disabled + .switch-ui { opacity: 0.4; }
+
+@media (max-width: 640px) {
+  .settings-panel { position: fixed; top: auto; right: auto; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(92vw, 380px); animation: none; }
+}
+
+/* ---- Letzte Gruppe laden ------------------------------------------------- */
+.group-restore[hidden] { display: none; }
+.btn-group-restore {
+  display: inline-flex; align-items: center; gap: 12px; text-align: left;
+  padding: 12px 22px; border-radius: 14px;
+  border: 1.5px dashed var(--line-rule-strong);
+  background: var(--white-paper); color: var(--ink-dark);
+  font-family: var(--font-ui); cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-group-restore svg { color: var(--scorepad-red); flex: none; }
+.btn-group-restore strong { display: block; font-size: 0.98rem; }
+.btn-group-restore small { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--ink-soft); }
+.btn-group-restore:hover { border-style: solid; border-color: var(--scorepad-red); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+/* ===========================================================================
+   ZETTEL-DESIGNS  (body[data-theme])
+   Jedes Design überschreibt Tokens (Farben, Schriften) und ergänzt Details
+   (Hintergründe, Rahmen, Texturen). Papier = Standard, ohne Overrides.
+   =========================================================================== */
+.score-input { color: var(--pen, #274a7a); }
+
+/* Vorschau-Kacheln im Design-Menü */
+.theme-swatch { position: relative; display: block; width: 100%; max-width: 64px; height: 46px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.3); }
+.theme-swatch b { position: absolute; left: 6px; right: 6px; top: 6px; height: 7px; border-radius: 2px; }
+.theme-swatch i { position: absolute; left: 6px; right: 6px; top: 18px; height: 3px; border-radius: 2px; opacity: 0.7; }
+.theme-swatch u { position: absolute; left: 6px; right: 22px; top: 27px; height: 3px; border-radius: 2px; opacity: 0.5; text-decoration: none; }
+.theme-swatch-paper   { background: radial-gradient(rgba(58,51,42,0.14) 0.6px, transparent 0.6px) 0 0/4px 4px, #f3ead9; }
+.theme-swatch-paper b { background: #a8342a; } .theme-swatch-paper i, .theme-swatch-paper u { background: #6b5f4e; }
+.theme-swatch-grid    { background: linear-gradient(90deg, transparent 9px, rgba(214,70,70,0.6) 9px 10px, transparent 10px), linear-gradient(rgba(60,110,170,0.4) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(90deg, rgba(60,110,170,0.4) 1px, transparent 1px) 0 0/8px 8px, #fdfdfb; }
+.theme-swatch-grid b  { background: #fff27a; left: 14px; } .theme-swatch-grid i, .theme-swatch-grid u { background: #1d3f9e; left: 14px; }
+.theme-swatch-coaster { background: radial-gradient(circle at 50% 55%, transparent 0 13px, rgba(163,40,26,0.55) 13px 14.5px, transparent 14.5px), radial-gradient(rgba(60,35,10,0.25) 0.7px, transparent 0.7px) 0 0/4px 4px, #d9bd8f; border: 4px solid #4a2c19; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3); }
+.theme-swatch-coaster b { background: #a3281a; left: 4px; right: 4px; top: 3px; } .theme-swatch-coaster i, .theme-swatch-coaster u { background: #1d2b52; left: 4px; top: 14px; }
+.theme-swatch-coaster u { top: 22px; right: 18px; }
+.theme-swatch-chalk   { background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.1), transparent 60%), #24322c; border: 4px solid #7b5230; }
+.theme-swatch-chalk b { background: transparent; border-bottom: 2px dashed rgba(255,255,255,0.7); left: 4px; right: 4px; top: 2px; height: 6px; border-radius: 0; }
+.theme-swatch-chalk i { background: #ffe9a0; left: 4px; top: 12px; } .theme-swatch-chalk u { background: #f1efe4; left: 4px; top: 20px; right: 16px; }
+.theme-option.is-active .theme-swatch { box-shadow: 0 0 0 2px var(--scorepad-red); }
+
+/* ===========================================================================
+   KARIERT — Schulheft mit Spiralbindung, Bleistift und Textmarker
+   =========================================================================== */
+body[data-theme="grid"] {
+  --font-display: 'Patrick Hand', 'Comic Sans MS', cursive;
+  --font-hand: 'Kalam', 'Caveat', cursive;
+  --paper-base: #fbfdff; --paper-base-2: #e9f0f8; --paper-shadow: #b5c7da;
+  --ink-dark: #1e2635; --ink-soft: #46556a; --ink-faint: #8191a6;
+  --scorepad-red: #2b5fa8; --scorepad-red-dark: #1d4380;
+  --brass: #6f95c0; --brass-light: #9dbbdc;
+  --line-rule: #b9cde3; --line-rule-strong: #6f95c0;
+  --row-tint: #f3f8fe; --row-tint-lower: #f3f8fe;
+  --upper-tint: #f4f9ff; --lower-tint: #fffef7; --grand-tint: #fff08a;
+  --row-upper-even: #eaf3fd; --row-lower-even: #fbfbec;
+  --bonus-row: #fff7b5; --subtotal-tint: #dfeaf6;
+  --pill-pending: #eef3f9; --pill-ok: #d6f1d9; --pill-bad: #fcdcd7;
+  --btn-hover: #ffffff; --add-btn-hi: #ffffff; --add-btn-hover-a: #ffffff; --add-btn-hover-b: #e9f0f8;
+  --white-paper: #ffffff; --pen: #1b3c9c; --danger: #c0392b; --success: #2e7d32;
+  --shadow-lg: 0 16px 34px rgba(30,60,100,0.22), 0 3px 8px rgba(30,60,100,0.12);
+}
+body[data-theme="grid"] .paper-backdrop {
+  background-color: #f7f8f4;
+  background-image:
+    linear-gradient(90deg, transparent 70px, rgba(214,70,70,0.45) 70px 72px, transparent 72px),
+    linear-gradient(rgba(60,110,170,0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60,110,170,0.22) 1px, transparent 1px),
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.8), transparent 65%);
+  background-size: 100% 100%, 26px 26px, 26px 26px, 100% 100%;
+}
+@media (max-width: 700px) { body[data-theme="grid"] .paper-backdrop { background-image: linear-gradient(rgba(60,110,170,0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(60,110,170,0.22) 1px, transparent 1px); background-size: 26px 26px; } }
+body[data-theme="grid"] .brand-text h1 { font-weight: 400; letter-spacing: 0.5px; }
+body[data-theme="grid"] .brand-sub { display: inline-block; margin-left: 4px; padding: 0 8px; color: #1e2635; background: linear-gradient(transparent 52%, rgba(255,226,40,0.85) 52% 92%, transparent 92%); transform: rotate(-2deg); }
+body[data-theme="grid"] .brand-tagline { font-family: var(--font-display); font-size: 1.05rem; font-style: normal; }
+body[data-theme="grid"] .torn-edge { height: 12px; background: radial-gradient(circle at 50% 50%, #f7f8f4 0 3.5px, transparent 4px) 0 0/24px 12px repeat-x; border-top: 2px dotted rgba(60,110,170,0.5); opacity: 1; border-radius: 0; }
+/* Spiralbindung über dem Blatt */
+body[data-theme="grid"] .scorepad-card { border: 1px solid #c3d3e4; border-radius: 6px 6px 18px 18px; margin-top: 16px; }
+body[data-theme="grid"] .scorepad-card::before {
+  content: ''; position: absolute; left: 16px; right: 16px; top: -14px; height: 26px; z-index: 30; pointer-events: none;
+  background:
+    radial-gradient(ellipse 3.2px 6.5px at 50% 11px, #2c3340 0 70%, transparent 100%) 0 0/22px 26px repeat-x,
+    radial-gradient(ellipse 5.5px 5.5px at 50% 21px, rgba(30,40,60,0.35) 0 60%, transparent 100%) 0 0/22px 26px repeat-x;
+  filter: drop-shadow(0 2px 1.5px rgba(0,0,0,0.3));
+}
+body[data-theme="grid"] .page-corner { background: linear-gradient(135deg, transparent 50%, rgba(60,110,170,0.14) 50%); }
+body[data-theme="grid"] tbody td:not(.col-label) {
+  background-image: linear-gradient(rgba(70,120,180,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(70,120,180,0.2) 1px, transparent 1px);
+  background-size: 23px 23px;
+}
+body[data-theme="grid"] .col-label { border-right-width: 2px; border-right-color: rgba(214,70,70,0.65); }
+body[data-theme="grid"] .score-input { font-size: 1.35rem; font-weight: 700; text-shadow: 0 0 0.5px rgba(27,60,156,0.6); }
+body[data-theme="grid"] td.cell-sheet-a .score-input, body[data-theme="grid"] td.cell-sheet-b .score-input { font-size: 1.15rem; }
+body[data-theme="grid"] .total-label, body[data-theme="grid"] .rules-col h3 { font-family: var(--font-display); letter-spacing: 0.04em; }
+body[data-theme="grid"] tr.row-grand-total td { border-top: 4px double #c0392b; }
+body[data-theme="grid"] .row-grand-total .total-value { color: #1b3c9c; text-decoration: underline wavy rgba(192,57,43,0.7) 1.5px; text-underline-offset: 6px; }
+body[data-theme="grid"] .row-grand-total .total-label { color: #1e2635; }
+body[data-theme="grid"] .censor { color: #1b3c9c; }
+body[data-theme="grid"] .bonus-badge { font-family: var(--font-display); font-size: 0.88rem; }
+body[data-theme="grid"] .rules-card { border: 1px solid #c3d3e4; background-image: linear-gradient(rgba(70,120,180,0.16) 1px, transparent 1px); background-size: 100% 24px; background-position: 0 14px; }
+body[data-theme="grid"] .ceremony { background-color: #f7f8f4; background-image: linear-gradient(90deg, transparent 70px, rgba(214,70,70,0.4) 70px 72px, transparent 72px), linear-gradient(rgba(60,110,170,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(60,110,170,0.2) 1px, transparent 1px); background-size: 100% 100%, 26px 26px, 26px 26px; }
+body[data-theme="grid"] .cer-title { text-shadow: 3px 3px 0 rgba(255,226,40,0.7); }
+
+/* ===========================================================================
+   BIERDECKEL — Kneipentisch aus dunklem Holz, Karton mit Druckrand, Edding
+   =========================================================================== */
+body[data-theme="coaster"] {
+  --font-display: 'Alfa Slab One', 'Rockwell', 'Georgia', serif;
+  --font-hand: 'Permanent Marker', 'Caveat', cursive;
+  --paper-base: #dcc194; --paper-base-2: #c9a672; --paper-shadow: #7a5427;
+  --ink-dark: #2e1f0e; --ink-soft: #55391d; --ink-faint: #7e623c;
+  --scorepad-red: #b02e1c; --scorepad-red-dark: #7d1d11;
+  --brass: #8a5a2b; --brass-light: #b58348;
+  --line-rule: #b49261; --line-rule-strong: #6f4f27;
+  --row-tint: #d6b985; --row-tint-lower: #d3b581;
+  --upper-tint: #dcc194; --lower-tint: #d4b684; --grand-tint: #8f2418;
+  --row-upper-even: #d5b87f; --row-lower-even: #cdaf79;
+  --bonus-row: #e6cf9f; --subtotal-tint: #c4a06b;
+  --pill-pending: #d3b887; --pill-ok: #c9dba9; --pill-bad: #efc3b5;
+  --btn-hover: #f3dfb6; --add-btn-hi: #ecd5a6; --add-btn-hover-a: #f5e3bd; --add-btn-hover-b: #d9bd8f;
+  --white-paper: #ebd6aa; --pen: #1b2a52; --success: #3d6b2d; --danger: #a3281a;
+  --shadow-lg: 0 22px 44px rgba(0,0,0,0.6), 0 5px 12px rgba(0,0,0,0.4);
+}
+body[data-theme="coaster"] .paper-backdrop {
+  background-color: #35200f;
+  background-image:
+    radial-gradient(ellipse at 50% 12%, rgba(255,170,90,0.22), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.5) 0 3px, rgba(255,190,120,0.07) 3px 4px, transparent 4px 150px),
+    repeating-linear-gradient(0deg, rgba(255,205,150,0.04) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 13px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 47px),
+    linear-gradient(180deg, #4d2e19, #2a170b);
+  background-size: 100% 100%, 100% 300px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+body[data-theme="coaster"] .brand-text h1 { color: #f7e4bb; text-shadow: 0 3px 0 #1c0e05, 0 0 22px rgba(255,170,70,0.25); font-weight: 400; letter-spacing: 1.5px; }
+body[data-theme="coaster"] .brand-sub { color: #f2a33a; }
+body[data-theme="coaster"] .brand-tagline,
+body[data-theme="coaster"] .hint-text,
+body[data-theme="coaster"] .app-footer p { color: #dcc298; }
+body[data-theme="coaster"] .hint-text strong { color: #f7e4bb; }
+body[data-theme="coaster"] .brand-dice { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+body[data-theme="coaster"] .torn-edge { height: 7px; border-radius: 4px; opacity: 1; background: linear-gradient(180deg, #f0c872, #b5812c 55%, #7c5316); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+body[data-theme="coaster"] .btn-icon-label, body[data-theme="coaster"] .mode-toggle { box-shadow: 0 2px 0 #6f4f27, 0 4px 8px rgba(0,0,0,0.4); }
+body[data-theme="coaster"] .scorepad-card {
+  border: 4px solid #6f4a26; border-radius: 26px;
+  background: var(--white-paper);
+  outline: 2px dashed rgba(163,40,26,0.6); outline-offset: -11px;
+  box-shadow: 0 0 0 3px #2a170b, var(--shadow-lg), inset 0 0 30px rgba(90,55,20,0.35);
+  padding: clamp(10px, 1.8vw, 16px);
+}
+body[data-theme="coaster"] .scorepad-scroll-region { border-radius: 16px; box-shadow: 0 0 0 2px rgba(111,79,39,0.55); }
+body[data-theme="coaster"] .scorepad-table {
+  background-color: var(--paper-base);
+  background-image: radial-gradient(rgba(70,40,10,0.14) 0.7px, transparent 0.7px), radial-gradient(rgba(255,235,190,0.12) 0.7px, transparent 0.7px);
+  background-size: 4px 4px, 7px 7px; background-position: 0 0, 2px 3px;
+}
+body[data-theme="coaster"] .page-corner { background: linear-gradient(135deg, transparent 50%, rgba(60,30,5,0.28) 50%); }
+body[data-theme="coaster"] .category-label { font-weight: 700; letter-spacing: 0.01em; }
+body[data-theme="coaster"] .category-icon { color: #a3281a; opacity: 1; }
+body[data-theme="coaster"] .score-input { font-size: 1.25rem; font-weight: 400; transform: rotate(-1.5deg); text-shadow: 0 0 1px rgba(27,42,82,0.7); }
+body[data-theme="coaster"] td.cell-sheet-a .score-input, body[data-theme="coaster"] td.cell-sheet-b .score-input { font-size: 1.05rem; }
+body[data-theme="coaster"] .col-player-head { background: linear-gradient(180deg, #d1b07a, #c5a068); }
+body[data-theme="coaster"] .col-label-head { background: linear-gradient(180deg, #d1b07a, #c5a068); }
+body[data-theme="coaster"] tr.row-upper-total td, body[data-theme="coaster"] tr.row-lower-total td { border-top-style: solid; border-color: #6f4f27; }
+body[data-theme="coaster"] .total-label { font-size: 0.8rem; letter-spacing: 0.06em; }
+body[data-theme="coaster"] .total-value { font-size: 1.05rem; color: #7d1d11; }
+body[data-theme="coaster"] tr.row-grand-total td { border-top: 4px double #f0c872; border-bottom: 3px solid #5a1209; }
+body[data-theme="coaster"] .row-grand-total .total-label, body[data-theme="coaster"] .row-grand-total .total-value { color: #f9e6bd; text-shadow: 0 2px 0 rgba(0,0,0,0.45); }
+body[data-theme="coaster"] .row-grand-total .total-value { font-size: 1.45rem; }
+body[data-theme="coaster"] .censor { color: #f9e6bd; }
+body[data-theme="coaster"] .bonus-badge { border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
+body[data-theme="coaster"] .rules-card { border: 3px solid #6f4a26; outline: 1.5px dashed rgba(163,40,26,0.55); outline-offset: -8px; border-radius: 20px; }
+body[data-theme="coaster"] .ceremony {
+  background-color: #cfae79;
+  background-image:
+    radial-gradient(circle at 50% 48%, transparent 0 40vmin, rgba(163,40,26,0.28) 40vmin 40.8vmin, transparent 40.8vmin 42.6vmin, rgba(163,40,26,0.28) 42.6vmin 43.4vmin, transparent 43.4vmin),
+    radial-gradient(rgba(70,40,10,0.14) 0.7px, transparent 0.7px),
+    radial-gradient(ellipse at 50% 0%, rgba(255,235,190,0.45), transparent 60%);
+  background-size: 100% 100%, 4px 4px, 100% 100%;
+  box-shadow: inset 0 0 0 10px #6f4a26, inset 0 0 0 13px #2a170b;
+}
+body[data-theme="coaster"] .cer-title { text-shadow: 0 3px 0 rgba(255,225,160,0.7); letter-spacing: 0.06em; }
+body[data-theme="coaster"] .cer-slot.is-revealed .cer-block { color: #2e1f0e; }
+
+/* ===========================================================================
+   TAFEL — Kreidetafel im Holzrahmen mit Ablage und Kreidestücken
+   =========================================================================== */
+body[data-theme="chalk"] {
+  --font-display: 'Gloria Hallelujah', 'Comic Sans MS', cursive;
+  --font-hand: 'Gochi Hand', 'Caveat', cursive;
+  --paper-base: #2b3a33; --paper-base-2: #202d27; --paper-shadow: #121b17;
+  --ink-dark: #f3f1e6; --ink-soft: #cdd0c3; --ink-faint: #929d94;
+  --scorepad-red: #cf5740; --scorepad-red-dark: #f0b56a;
+  --brass: #c9a35f; --brass-light: #e2c283;
+  --line-rule: rgba(243,241,230,0.2); --line-rule-strong: rgba(243,241,230,0.5);
+  --row-tint: #2f3f37; --row-tint-lower: #2d3d35;
+  --upper-tint: #2f3f37; --lower-tint: #2a3931; --grand-tint: #3f5445;
+  --row-upper-even: #33443b; --row-lower-even: #2e3e35;
+  --bonus-row: #3a4a33; --subtotal-tint: #384a40;
+  --pill-pending: #33443b; --pill-ok: #2f5a3a; --pill-bad: #5e3330;
+  --btn-hover: #3d4f45; --add-btn-hi: #3b4d43; --add-btn-hover-a: #46594e; --add-btn-hover-b: #33443b;
+  --white-paper: #34443b; --pen: #ffe9a0; --success: #93d89a; --danger: #f0907e;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.45); --shadow-md: 0 4px 10px rgba(0,0,0,0.45);
+  --shadow-lg: 0 18px 40px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.35);
+  --shadow-inset: inset 0 1px 3px rgba(0,0,0,0.55);
+  color-scheme: dark;
+}
+body[data-theme="chalk"] .paper-backdrop {
+  background-color: #17201c;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 18% 22%, rgba(255,255,255,0.07), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 82% 60%, rgba(255,255,255,0.055), transparent 70%),
+    radial-gradient(ellipse 70% 30% at 40% 90%, rgba(255,255,255,0.05), transparent 70%),
+    linear-gradient(112deg, transparent 0 30%, rgba(255,255,255,0.03) 30% 34%, transparent 34% 62%, rgba(255,255,255,0.025) 62% 64%, transparent 64%),
+    radial-gradient(rgba(255,255,255,0.05) 0.5px, transparent 0.5px),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 5px 5px, 100% 100%;
+}
+body[data-theme="chalk"] .brand-text h1 { font-weight: 400; color: #f7f5ea; text-shadow: 0 0 14px rgba(255,255,255,0.28); letter-spacing: 1px; }
+body[data-theme="chalk"] .brand-sub { color: #ffe9a0; text-shadow: 0 0 14px rgba(255,233,160,0.45); }
+body[data-theme="chalk"] .brand-tagline { font-family: var(--font-display); font-style: normal; font-size: 0.95rem; }
+body[data-theme="chalk"] .torn-edge { height: 5px; opacity: 0.6; border-radius: 3px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.8) 0 16px, transparent 16px 22px, rgba(255,255,255,0.8) 22px 26px, transparent 26px 32px); }
+body[data-theme="chalk"] .btn-icon-label, body[data-theme="chalk"] .mode-toggle { border-color: rgba(243,241,230,0.55); }
+body[data-theme="chalk"] .scorepad-card {
+  margin-bottom: 18px;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.05), transparent 60%), #26342d;
+  border: 13px solid transparent;
+  border-image: linear-gradient(135deg, #b88a55, #7a4f28 35%, #a6753e 55%, #623f20 80%, #8d5f33) 1;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), var(--shadow-lg), inset 0 0 0 2px rgba(0,0,0,0.5), inset 0 8px 26px rgba(0,0,0,0.6);
+  padding: clamp(6px, 1.4vw, 10px);
+}
+/* Kreideablage mit zwei Kreidestücken */
+body[data-theme="chalk"] .scorepad-card::after {
+  content: ''; position: absolute; left: 4%; right: 4%; bottom: -27px; height: 12px; z-index: 2; pointer-events: none;
+  background: linear-gradient(180deg, #b88a55, #6e4624); border-radius: 0 0 5px 5px; box-shadow: 0 6px 10px rgba(0,0,0,0.55);
+}
+body[data-theme="chalk"] .scorepad-card::before {
+  content: ''; position: absolute; left: 10%; bottom: -21px; width: 40px; height: 9px; z-index: 3; pointer-events: none;
+  background: #f6f3e8; border-radius: 4px 5px 5px 4px; box-shadow: 58px 0 0 -1px #ffe48a, 0 2px 3px rgba(0,0,0,0.45);
+}
+body[data-theme="chalk"] .scorepad-scroll-region { border-radius: 2px; }
+body[data-theme="chalk"] .scorepad-table {
+  background-color: #26342d;
+  background-image: radial-gradient(ellipse 70% 50% at 25% 25%, rgba(255,255,255,0.045), transparent 70%), radial-gradient(rgba(255,255,255,0.045) 0.5px, transparent 0.5px);
+  background-size: 100% 100%, 5px 5px;
+}
+body[data-theme="chalk"] .page-corner { display: none; }
+body[data-theme="chalk"] tbody td { border-bottom-style: dashed; border-right-style: dashed; }
+body[data-theme="chalk"] .col-label, body[data-theme="chalk"] .col-label-head, body[data-theme="chalk"] .col-player-head { box-shadow: none; }
+body[data-theme="chalk"] .col-label { border-right: 2px solid rgba(243,241,230,0.55); }
+body[data-theme="chalk"] .category-label { font-weight: 500; font-size: 0.96rem; letter-spacing: 0.02em; }
+body[data-theme="chalk"] .category-icon { color: #ffe9a0; opacity: 0.9; }
+body[data-theme="chalk"] .score-input { font-size: 1.6rem; font-weight: 400; text-shadow: 0 0 7px rgba(255,233,160,0.4); }
+body[data-theme="chalk"] td.cell-sheet-a .score-input, body[data-theme="chalk"] td.cell-sheet-b .score-input { font-size: 1.3rem; }
+body[data-theme="chalk"] .score-input:focus { background: rgba(255,233,160,0.09); box-shadow: inset 0 -2px 0 #ffe9a0; }
+body[data-theme="chalk"] .score-input::placeholder { color: rgba(243,241,230,0.35); }
+body[data-theme="chalk"] tr.row-upper-total td, body[data-theme="chalk"] tr.row-lower-total td { border-top: 2.5px solid rgba(243,241,230,0.7); border-bottom: 2.5px solid rgba(243,241,230,0.7); }
+body[data-theme="chalk"] .total-label { font-size: 0.8rem; letter-spacing: 0.04em; }
+body[data-theme="chalk"] .total-value { color: #ffe9a0; text-shadow: 0 0 8px rgba(255,233,160,0.35); }
+body[data-theme="chalk"] tr.row-upper-total-with-bonus .total-label, body[data-theme="chalk"] tr.row-upper-total-with-bonus .total-value { color: #ffe9a0; }
+body[data-theme="chalk"] tr.row-grand-total td { border-top: 4px double #ffe9a0; border-bottom: 2.5px solid rgba(243,241,230,0.7); }
+body[data-theme="chalk"] .row-grand-total .total-label { color: #ffe9a0; }
+body[data-theme="chalk"] .row-grand-total .total-value { color: #fff3c4; font-size: 1.55rem; text-shadow: 0 0 12px rgba(255,233,160,0.55); }
+body[data-theme="chalk"] .censor { color: #ffe9a0; }
+body[data-theme="chalk"] .bonus-badge { font-family: var(--font-display); font-size: 0.78rem; }
+body[data-theme="chalk"] .need-hint { font-family: var(--font-display); }
+body[data-theme="chalk"] .rules-card { border: 8px solid transparent; border-image: linear-gradient(135deg, #b88a55, #7a4f28 40%, #a6753e 60%, #623f20) 1; border-radius: 0; background: #26342d; }
+body[data-theme="chalk"] .rules-col h3 { color: #ffe9a0; }
+body[data-theme="chalk"] .toast { background: #f3f1e6; color: #1f2b25; }
+body[data-theme="chalk"] .settings-panel { border-color: rgba(243,241,230,0.4); }
+body[data-theme="chalk"] .ceremony {
+  background-color: #1d2923;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,255,255,0.07), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 70%, rgba(255,255,255,0.05), transparent 70%),
+    radial-gradient(rgba(255,255,255,0.045) 0.5px, transparent 0.5px),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.5) 100%);
+  background-size: 100% 100%, 100% 100%, 5px 5px, 100% 100%;
+  box-shadow: inset 0 0 0 14px #8d5f33, inset 0 0 0 16px #4a2e15, inset 0 0 40px 18px rgba(0,0,0,0.5);
+}
+body[data-theme="chalk"] .cer-title { color: #fff3c4; text-shadow: 0 0 18px rgba(255,233,160,0.5); font-weight: 400; }
+body[data-theme="chalk"] .cer-subtitle b, body[data-theme="chalk"] .cer-score, body[data-theme="chalk"] .cer-rest-rank { color: #ffe9a0; }
+body[data-theme="chalk"] .cer-slot.is-revealed .cer-block { color: #2a1f08; }
+body[data-theme="chalk"] .cer-rest-item { border-style: dashed; border-color: rgba(243,241,230,0.4); }
+body[data-theme="chalk"] .cer-close { color: rgba(243,241,230,0.7); }
+body[data-theme="chalk"] .cer-nav { background: rgba(32,45,39,0.9); border-color: rgba(243,241,230,0.5); }
+body[data-theme="chalk"] .btn-calculate, body[data-theme="chalk"] .cer-action-primary { color: #fff8ec; }
+body[data-theme="chalk"] .cer-flash { background: #eef2ea; }
+
+/* ===========================================================================
+   VERSION 1.5
+   =========================================================================== */
+
+/* (Hervorhebung: siehe Version 1.6 unten) */
+.col-player-head.is-drawn { animation: drawn-pop 0.8s cubic-bezier(.2,1.4,.4,1); }
+@keyframes drawn-pop { 0% { transform: scale(1); } 40% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+/* ---- Streichen-Knopf ausblenden (Option). Bereits gestrichene Felder behalten
+        ihren Knopf, damit man das Streichen wieder rückgängig machen kann. ---- */
+body.hide-strike .cell-score:not(.is-struck) .strike-toggle-btn { display: none; }
+
+/* ---- Startspieler-Button ------------------------------------------------- */
+#btn-draw-start:disabled { opacity: 0.7; cursor: progress; transform: none; }
+#btn-draw-start:not(:disabled):hover svg { animation: dice-shake 0.5s ease; }
+@keyframes dice-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-18deg); } 75% { transform: rotate(18deg); } }
+
+/* ===========================================================================
+   VERSION 1.6
+   =========================================================================== */
+
+/* ---- Wer ist dran: weiche, moderne Hervorhebung --------------------------
+   Statt harter Kanten: sanfte Farbfläche über die ganze Spalte, ein Kopf mit
+   Farbverlauf und eine kleine leuchtende "Pille" darunter. Alles blendet
+   weich ein und aus. Keine Streifen zwischen den beiden Zetteln im
+   Doppel-Modus – die Spalte wirkt wie eine zusammenhängende Fläche.        */
+.player-tinted-col::after { transition: background-color 0.45s ease; }
+
+body .player-tinted-col.is-turn::after,
+body.senior-mode .player-tinted-col.is-turn::after {
+  background: color-mix(in srgb, var(--player-tint) 17%, transparent);
+  animation: none;
+}
+
+/* ganz feine Außenkante nur links/rechts der gesamten Spielerspalte */
+body .player-tinted-col.is-turn { box-shadow: none; }
+body .cell-score.is-turn:not(.cell-sheet-a):not(.cell-sheet-b),
+body .cell-score.is-turn.cell-merged {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--player-tint) 38%, transparent), inset -2px 0 0 color-mix(in srgb, var(--player-tint) 38%, transparent);
+}
+body .cell-score.is-turn.cell-sheet-a:not(.cell-merged) { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--player-tint) 38%, transparent); }
+body .cell-score.is-turn.cell-sheet-b:not(.cell-merged) { box-shadow: inset -2px 0 0 color-mix(in srgb, var(--player-tint) 38%, transparent); }
+/* gestrichelte Trennlinie zwischen Zettel 1 und 2 wird in der aktiven Spalte unauffällig */
+body td.cell-sheet-a.is-turn { border-right-color: color-mix(in srgb, var(--player-tint) 22%, transparent); }
+
+body .row-players th.col-player-head.is-turn {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--player-tint) 34%, var(--paper-base-2)),
+    color-mix(in srgb, var(--player-tint) 14%, var(--paper-base-2)));
+  box-shadow: 0 3px 8px rgba(58,51,42,0.22);
+  transition: background 0.4s ease;
+}
+body .row-sheets th.col-sheet-head.is-turn { background: color-mix(in srgb, var(--player-tint) 20%, var(--paper-base)); }
+
+.player-header-cell .turn-marker {
+  bottom: 5px;
+  width: 44%;
+  height: 5px;
+  border-radius: 999px;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--player-tint) 65%, transparent);
+}
+.player-header-cell.is-turn .turn-marker {
+  width: 44%; height: 5px;
+  animation: turn-breathe 3.2s ease-in-out infinite;
+}
+@keyframes turn-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.col-player-head.is-turn .player-name-display,
+.col-player-head.is-turn .player-name-input { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .player-header-cell.is-turn .turn-marker { animation: none; } }
+
+/* ---- Einstellungen-Menü: aufgeräumt -------------------------------------- */
+.settings-panel {
+  width: min(320px, 90vw);
+  max-height: min(80vh, 600px);
+  overflow-y: auto;
+  padding: 0;
+  border-radius: 16px;
+  overscroll-behavior: contain;
+}
+.settings-head {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 10px 18px;
+  background: var(--white-paper);
+  border-bottom: 1px solid var(--line-rule);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--ink-dark);
+}
+.settings-close {
+  width: 30px; height: 30px; padding: 0 0 2px;
+  border: none; border-radius: 50%;
+  background: transparent; color: var(--ink-faint);
+  font-size: 1.5rem; line-height: 1; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.settings-close:hover { background: rgba(127,127,127,0.15); color: var(--ink-dark); }
+.settings-section { padding: 12px 18px 6px; }
+.settings-section + .settings-section { margin-top: 0; padding-top: 12px; border-top: 1px solid var(--line-rule); }
+.settings-title { margin-bottom: 8px; font-size: 0.68rem; letter-spacing: 0.1em; }
+
+.theme-grid { gap: 6px; padding-bottom: 8px; }
+.theme-option { padding: 6px 2px 4px; border-radius: 12px; }
+.theme-option.is-active { background: rgba(127,127,127,0.1); }
+
+.switch-row {
+  padding: 9px 0;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.switch-row + .switch-row { border-top: 1px solid var(--line-rule); }
+.switch-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.switch-row small { margin: 0; font-size: 0.72rem; font-weight: 400; color: var(--ink-faint); line-height: 1.3; }
+.switch-ui { width: 38px; height: 22px; }
+.switch-ui::after { width: 16px; height: 16px; top: 3px; left: 3px; }
+.switch-row input:checked + .switch-ui::after { transform: translateX(16px); }
+
+@media (max-width: 640px) {
+  .settings-panel { width: min(94vw, 400px); max-height: 74vh; }
+}
+
+/* ===========================================================================
+   VERSION 1.7 — Multiplayer (Zuschauen per QR-Code)
+   =========================================================================== */
+
+/* ---- Einstellungen: Multiplayer-Zeile ------------------------------------ */
+.mp-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 0 10px; }
+.mp-actions[hidden] { display: none; }
+.mp-qr-btn {
+  padding: 8px 16px; border-radius: 999px; border: none; cursor: pointer;
+  font-family: var(--font-ui); font-weight: 700; font-size: 0.85rem; color: #fdf6ea;
+  background: linear-gradient(160deg, var(--scorepad-red), var(--scorepad-red-dark));
+  box-shadow: var(--shadow-sm); transition: transform 0.15s ease, filter 0.15s ease;
+}
+.mp-qr-btn:hover { transform: translateY(-1px); filter: brightness(1.07); }
+.mp-status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--ink-faint); }
+.mp-status:empty { display: none; }
+.mp-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
+.mp-status[data-state="ready"]::before { background: var(--success); }
+.mp-status[data-state="connecting"]::before { background: #e0a82a; animation: mp-blink 1s ease-in-out infinite; }
+.mp-status[data-state="error"]::before { background: var(--danger); }
+@keyframes mp-blink { 50% { opacity: 0.35; } }
+
+/* ---- Fenster (QR-Code beim Host, Namenswahl beim Zuschauer) -------------- */
+.mp-modal {
+  position: fixed; inset: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(20,16,10,0.55); backdrop-filter: blur(3px);
+  animation: mp-in 0.2s ease;
+}
+@keyframes mp-in { from { opacity: 0; } to { opacity: 1; } }
+.mp-card {
+  position: relative; width: min(380px, 100%); max-height: 92vh; overflow-y: auto;
+  padding: 22px 22px 18px; text-align: center;
+  background: var(--white-paper); color: var(--ink-dark);
+  border: 1.5px solid var(--line-rule-strong); border-radius: 20px; box-shadow: var(--shadow-lg);
+  animation: mp-card-in 0.25s cubic-bezier(.2,1.2,.4,1);
+}
+@keyframes mp-card-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+.mp-card h2 { margin: 0 0 14px; font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; }
+.mp-x {
+  position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; padding: 0 0 2px;
+  border: none; border-radius: 50%; background: transparent; color: var(--ink-faint);
+  font-size: 1.6rem; line-height: 1; cursor: pointer;
+}
+.mp-x:hover { background: rgba(127,127,127,0.15); color: var(--ink-dark); }
+.mp-qr { width: min(260px, 68vw); margin: 0 auto 12px; padding: 8px; background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+.mp-qr svg { display: block; width: 100%; height: auto; }
+.mp-qr-wait { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; padding: 12px; color: #6b5f4e; font-size: 0.88rem; }
+.mp-hint { margin: 0 0 12px; font-size: 0.82rem; line-height: 1.4; color: var(--ink-soft); }
+.mp-link-row { display: flex; gap: 8px; }
+.mp-link-row input {
+  flex: 1; min-width: 0; padding: 8px 10px; font-size: 0.72rem;
+  border: 1px solid var(--line-rule-strong); border-radius: 10px; background: var(--paper-base); color: var(--ink-soft);
+}
+.mp-link-row button {
+  padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--line-rule-strong);
+  background: transparent; color: var(--ink-dark); font-family: var(--font-ui); font-weight: 700; font-size: 0.8rem; cursor: pointer;
+}
+.mp-link-row button:hover { background: rgba(127,127,127,0.12); }
+.mp-state { margin: 14px 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); }
+.mp-viewers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.mp-viewers li {
+  --pc: var(--ink-faint);
+  padding: 4px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+  border: 1.5px solid var(--pc); background: color-mix(in srgb, var(--pc) 14%, transparent);
+}
+
+/* Namenswahl beim Zuschauer */
+.vw-picker { z-index: 950; }
+.vw-list { display: flex; flex-direction: column; gap: 8px; }
+.vw-name {
+  --pc: #888;
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px;
+  border: 1.5px solid color-mix(in srgb, var(--pc) 60%, transparent); border-radius: 14px;
+  background: color-mix(in srgb, var(--pc) 12%, var(--white-paper)); color: var(--ink-dark);
+  font-family: var(--font-ui); font-size: 1.05rem; font-weight: 700; text-align: left; cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.vw-name i { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--pc); }
+.vw-name:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--pc) 24%, var(--white-paper)); }
+
+/* ---- Zuschauer-Modus: Ansicht ohne Bedienelemente ------------------------ */
+.viewer-bar[hidden] { display: none; }
+.viewer-bar {
+  --pc: var(--brass);
+  display: flex; align-items: center; gap: 10px;
+  max-width: 560px; margin: 0 auto 14px; padding: 10px 14px;
+  border: 1.5px solid var(--line-rule-strong); border-radius: 14px;
+  background: var(--white-paper); box-shadow: var(--shadow-sm);
+  font-weight: 700; color: var(--ink-dark);
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+.vb-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #e0a82a; }
+.viewer-bar.is-live .vb-dot { background: var(--success); }
+.viewer-bar.is-off .vb-dot { background: var(--danger); animation: mp-blink 1s ease-in-out infinite; }
+.viewer-bar.is-turn { border-color: var(--pc); background: color-mix(in srgb, var(--pc) 22%, var(--white-paper)); }
+.vb-text { flex: 1; min-width: 0; }
+.vb-switch {
+  padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line-rule-strong);
+  background: transparent; color: var(--ink-soft); font-family: var(--font-ui); font-weight: 700; font-size: 0.8rem; cursor: pointer;
+}
+.vb-switch[hidden] { display: none; }
+.vb-switch:hover { background: rgba(127,127,127,0.12); }
+
+body.viewer-mode #btn-draw-start,
+body.viewer-mode #btn-new-game,
+body.viewer-mode #mode-toggle,
+body.viewer-mode #btn-install,
+body.viewer-mode .action-bar,
+body.viewer-mode .add-player-wrap,
+body.viewer-mode .btn-remove-player,
+body.viewer-mode .strike-toggle-btn,
+body.viewer-mode .quick-fill-btn { display: none !important; }
+body.viewer-mode .scorepad-table { pointer-events: none; }
