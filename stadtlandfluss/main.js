@@ -1,5 +1,5 @@
 /**
- * Stadt Land Fluss — Version 1.0
+ * Stadt Land Fluss — Version 1.1
  * ---------------------------------------------------------------------------
  * Aufbau (alles in dieser Datei):
  *   1. Konstanten, Hilfsfunktionen, Einstellungen
@@ -26,11 +26,17 @@
   /* ===========================================================================
      1. KONSTANTEN, HILFSFUNKTIONEN, EINSTELLUNGEN
      =========================================================================== */
-  const VERSION = '1.0';
+  const VERSION = '1.1';
   const KEY_SETTINGS = 'slf.settings.v1';
   const KEY_NAME = 'slf.name.v1';
-  const KEY_SESSION = 'slf.session.v1';   // sessionStorage: Mitspieler-Sitzung (Wiederverbinden)
-  const KEY_CID = 'slf.cid.v1';           // sessionStorage: eigene Geräte-ID
+  const KEY_LAST = 'slf.last.v1';         // Mitspieler: zuletzt besuchtes Spiel {code,name} (Wiederverbinden)
+  const KEY_CID = 'slf.cid.v1';           // eigene Geräte-ID (bleibt dauerhaft, damit der Hub das Gerät wiedererkennt)
+  const KEY_ROOM = 'slf.room.v1';         // Hub: fester Spiel-Code (QR-Code bleibt gültig)
+  const KEY_GROUP = 'slf.group.v1';       // Hub: letzte Gruppe (Geräte + Namen)
+  const KEY_SNAP = 'slf.snap.v1';         // Hub: Spielstand zwischen den Runden (übersteht Neuladen)
+  const KEY_THEME = 'slf.theme.v1';
+  const KEY_PAD = 'slf.pad.v1';           // Zeichenfläche: Größe
+  const KEY_PEN = 'slf.pen.v1';           // Zeichenfläche: Stiftdicke
 
   const POINTS = [0, 5, 10, 20];
   const STOP_SECONDS = 5;                 // Nachlaufzeit nach "Stopp"
@@ -164,6 +170,8 @@
     evalData: null,      // alle Antworten (Abstimmungsrunde ohne Host)
     text: {},            // eigene Texteingaben der laufenden Runde
     draw: {},            // eigene Zeichnungen der laufenden Runde (PNG-Data-URL)
+    strokes: {},         // Striche der Zeichnungen (für Rückgängig / Größenwechsel)
+    resuming: false, failCount: 0,   // automatisches Wiederbeitreten
     votesSent: false,
     net: 'idle',         // Client: 'connecting' | 'online' | 'offline'
     netMsg: '',
@@ -171,8 +179,8 @@
     peer: null, conn: null, retry: null, halted: false,
   };
   try {
-    S.cid = sessionStorage.getItem(KEY_CID);
-    if (!S.cid) { S.cid = uid(); sessionStorage.setItem(KEY_CID, S.cid); }
+    S.cid = localStorage.getItem(KEY_CID);
+    if (!S.cid) { S.cid = uid(); localStorage.setItem(KEY_CID, S.cid); }
   } catch (err) { S.cid = uid(); }
 
   let cur = { key: null, update: null, cleanups: [] };
@@ -185,6 +193,7 @@
     if (cur.key === key) { if (cur.update) cur.update(); return; }
     const y = window.scrollY;
     cur.cleanups.forEach((f) => { try { f(); } catch (err) { /* ignore */ } });
+    document.body.dataset.screen = String(key).split(':')[0];
     app.innerHTML = '';
     const root = h('div', { class: 'screen' });
     app.append(root);
@@ -247,6 +256,200 @@
   ['pointerdown', 'keydown'].forEach((evt) => document.addEventListener(evt, () => { if (!wake) requestWake(); }, { passive: true }));
 
   /* ===========================================================================
+     2b. TÖNE (Web Audio, ohne Dateien) — immer an
+     Würfeln beim Buchstaben, Tick-Tack beim Stopp-Countdown, Fanfare am Ende.
+     =========================================================================== */
+  const Sfx = (() => {
+    let ac = null, master = null, noiseBuf = null;
+
+    function ensure() {
+      try {
+        if (!ac) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return false;
+          ac = new AC();
+          master = ac.createGain();
+          master.gain.value = 0.9;
+          const comp = ac.createDynamicsCompressor();
+          master.connect(comp);
+          comp.connect(ac.destination);
+          noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+          const d = noiseBuf.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        }
+        if (ac.state === 'suspended') ac.resume();
+        return true;
+      } catch (err) { ac = null; return false; }
+    }
+
+    function tone(freq, t0, dur, o = {}) {
+      const { type = 'sawtooth', vol = 0.18, lp = 2400, attack = 0.01, slideTo = null, vib = 0 } = o;
+      const osc = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      f.type = 'lowpass'; f.frequency.value = lp;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(f); f.connect(g); g.connect(master);
+      if (vib) {
+        const lfo = ac.createOscillator(), lg = ac.createGain();
+        lfo.frequency.value = 5.5; lg.gain.value = vib;
+        lfo.connect(lg); lg.connect(osc.frequency);
+        lfo.start(t0); lfo.stop(t0 + dur + 0.05);
+      }
+      osc.start(t0); osc.stop(t0 + dur + 0.05);
+    }
+
+    function noise(t0, dur, o = {}) {
+      const { type = 'bandpass', freq = 2000, q = 0.8, vol = 0.2, flat = false, dest = null } = o;
+      const src = ac.createBufferSource();
+      src.buffer = noiseBuf; src.loop = true;
+      const f = ac.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(vol, t0);
+      if (!flat) g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(f); f.connect(g); g.connect(dest || master);
+      src.start(t0, Math.random() * 0.9, dur);
+    }
+
+    const now = () => ac.currentTime;
+
+    /** Würfel-Klacken (ein Schritt der Buchstaben-Animation). */
+    function clack() {
+      if (!ensure()) return;
+      const t = now(), r = Math.random();
+      noise(t, 0.05, { freq: 1500 + r * 1400, q: 1.1, vol: 0.34 });
+      tone(150 + r * 70, t, 0.07, { type: 'sine', vol: 0.22, slideTo: 85, attack: 0.003 });
+    }
+    /** Heller Zwei-Ton-Gong, wenn der Buchstabe feststeht. */
+    function ding() {
+      if (!ensure()) return;
+      const t = now() + 0.02;
+      [880, 1318.5].forEach((f, i) => tone(f, t + i * 0.1, 1.0, { type: 'triangle', vol: 0.2, lp: 5000, attack: 0.01 }));
+      noise(t, 0.4, { type: 'highpass', freq: 6000, vol: 0.05 });
+    }
+    /** Tick-Tack: abwechselnd hoch und tief, jede Sekunde des Stopp-Countdowns. */
+    function tick(n) {
+      if (!ensure()) return;
+      const t = now() + 0.005;
+      const hi = n % 2 === 1;
+      noise(t, 0.035, { type: hi ? 'highpass' : 'bandpass', freq: hi ? 3200 : 1100, q: 1, vol: 0.34 });
+      tone(hi ? 1500 : 950, t, 0.06, { type: 'sine', vol: 0.2, attack: 0.002 });
+    }
+    /** Summer, wenn die Zeit abgelaufen ist. */
+    function buzz() {
+      if (!ensure()) return;
+      const t = now() + 0.005;
+      tone(150, t, 0.55, { type: 'sawtooth', vol: 0.22, lp: 700, slideTo: 105 });
+      tone(155, t, 0.55, { type: 'square', vol: 0.08, lp: 500, slideTo: 108 });
+    }
+    function cymbal(t) { noise(t, 1.6, { type: 'highpass', freq: 5500, q: 0.5, vol: 0.22 }); }
+    function applause(sec, delay) {
+      const t0 = now() + (delay || 0);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.7);
+      g.gain.setValueAtTime(0.9, t0 + sec - 1.5);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+      g.connect(master);
+      noise(t0, sec, { freq: 2800, q: 0.35, vol: 0.1, flat: true, dest: g });
+      for (let i = 0, n = Math.floor(sec * 45); i < n; i++) {
+        const r = Math.random();
+        noise(t0 + Math.random() * (sec - 0.1), 0.03 + r * 0.04, { freq: 900 + r * 3200, q: 1.2, vol: 0.12 + r * 0.2, dest: g });
+      }
+    }
+    /** Fanfare + Applaus für die Siegerehrung. */
+    function fanfare() {
+      if (!ensure()) return;
+      const t = now() + 0.02;
+      const C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.5;
+      [[C5, 0, 0.14], [C5, 0.17, 0.14], [C5, 0.34, 0.14], [E5, 0.55, 0.32], [C5, 0.95, 0.2], [E5, 1.2, 0.2], [G5, 1.5, 0.5], [C6, 2.1, 1.4]]
+        .forEach(([f, o, d]) => {
+          tone(f, t + o, d + 0.15, { vol: 0.16, lp: 2600, vib: 4 });
+          tone(f / 2, t + o, d + 0.15, { vol: 0.1, lp: 1400, vib: 3 });
+        });
+      [261.63, 329.63, 392, 523.25].forEach((f) => tone(f, t + 2.1, 1.7, { vol: 0.11, lp: 1800, vib: 3 }));
+      cymbal(t); cymbal(t + 2.1);
+      for (let i = 0; i < 10; i++) tone(1568 + Math.random() * 2200, t + 2.1 + i * 0.07, 0.3, { type: 'sine', vol: 0.05, lp: 9000 });
+      applause(5.5, 2.0);
+    }
+
+    return { ensure, clack, ding, tick, buzz, fanfare };
+  })();
+
+  // Browser erlauben Ton erst nach einer Berührung – die erste Geste schaltet ihn frei.
+  ['pointerdown', 'touchstart', 'keydown', 'click'].forEach((evt) =>
+    document.addEventListener(evt, () => Sfx.ensure(), { passive: true }));
+
+  /** Tick-Tack nur einmal pro Sekunde und Runde auslösen. */
+  let lastTick = '';
+  function stopTick(v) {
+    const sec = stopRemaining(v);
+    const key = v.round + ':' + sec;
+    if (key === lastTick) return;
+    lastTick = key;
+    if (sec > 0) Sfx.tick(sec);
+  }
+
+  /* ===========================================================================
+     2c. DESIGNS (nur auf diesem Gerät, werden gemerkt)
+     =========================================================================== */
+  const THEMES = [
+    { id: 'paper',    label: 'Papier',    meta: '#c8482f' },
+    { id: 'notebook', label: 'Schulheft', meta: '#2b5fa8' },
+    { id: 'chalk',    label: 'Tafel',     meta: '#26342d' },
+    { id: 'atlas',    label: 'Atlas',     meta: '#1d5a63' },
+    { id: 'show',     label: 'Spielshow', meta: '#2a1d6a' },
+  ];
+  const THEME_FONTS = {
+    notebook: 'family=Patrick+Hand&family=Kalam:wght@400;700',
+    chalk: 'family=Gloria+Hallelujah&family=Gochi+Hand',
+    atlas: 'family=IM+Fell+English+SC&family=IM+Fell+English',
+    show: 'family=Fredoka:wght@500;600;700',
+  };
+  let themeId = 'paper';
+  try { const t = localStorage.getItem(KEY_THEME); if (THEMES.some((x) => x.id === t)) themeId = t; } catch (err) { /* ignore */ }
+
+  function loadThemeFonts(id) {
+    const q = THEME_FONTS[id];
+    if (!q || document.getElementById('font-' + id)) return;
+    document.head.appendChild(h('link', { id: 'font-' + id, rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?' + q + '&display=swap' }));
+  }
+  function applyTheme() {
+    loadThemeFonts(themeId);
+    document.body.dataset.theme = themeId;
+    const t = THEMES.find((x) => x.id === themeId);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && t) meta.setAttribute('content', t.meta);
+  }
+  function initThemeUI() {
+    const panel = h('div', { class: 'theme-panel', id: 'theme-panel', hidden: true, role: 'dialog', 'aria-label': 'Design wählen' },
+      h('div', { class: 'theme-title' }, 'Design'),
+      h('div', { class: 'theme-grid', role: 'radiogroup' }, THEMES.map((t) =>
+        h('button', { type: 'button', class: 'theme-option', role: 'radio', 'data-theme-id': t.id, onClick: () => {
+          themeId = t.id;
+          try { localStorage.setItem(KEY_THEME, themeId); } catch (err) { /* ignore */ }
+          applyTheme(); sync();
+        } }, h('span', { class: 'theme-swatch theme-swatch-' + t.id }, h('b'), h('i'), h('u')), h('span', { class: 'theme-name' }, t.label)))));
+    const fab = h('button', { type: 'button', class: 'theme-fab', 'aria-label': 'Design wählen', 'aria-expanded': 'false', title: 'Design', onClick: (e) => {
+      e.stopPropagation();
+      const open = panel.hidden;
+      panel.hidden = !open;
+      fab.setAttribute('aria-expanded', String(open));
+      if (open) Object.keys(THEME_FONTS).forEach(loadThemeFonts);
+    } }, ico('fa-palette'));
+    function sync() { panel.querySelectorAll('.theme-option').forEach((b) => { const on = b.dataset.themeId === themeId; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); }); }
+    document.addEventListener('click', (e) => {
+      if (!panel.hidden && !e.target.closest('#theme-panel') && !e.target.closest('.theme-fab')) { panel.hidden = true; fab.setAttribute('aria-expanded', 'false'); }
+    });
+    document.body.append(fab, panel);
+    sync();
+  }
+
+  /* ===========================================================================
      3. HUB: SPIELLOGIK (läuft auf dem Gerät, das das Spiel erstellt hat)
      Phasen: lobby -> roll -> play -> stopping -> collect -> eval -> result -> (roll … | final)
      =========================================================================== */
@@ -268,11 +471,53 @@
     const used = new Set(G.players.map((p) => p.color));
     return COLORS.find((c) => !used.has(c)) || COLORS[G.players.length % COLORS.length];
   }
-  function uniqueName(base) {
+  function uniqueName(base, exceptId) {
     let name = base || 'Spieler';
     let n = 2;
-    while (G.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) name = base + ' ' + n++;
+    while (G.players.some((p) => p.id !== exceptId && p.name.toLowerCase() === name.toLowerCase())) name = base + ' ' + n++;
     return name;
+  }
+
+  /* ---- Gruppe, Spiel-Code & Spielstand merken (nur Hub) --------------------- */
+  const loadRoom = () => { try { const c = localStorage.getItem(KEY_ROOM); if (/^[a-z0-9]{6}$/.test(c || '')) return c; } catch (err) { /* ignore */ } return null; };
+  const saveRoom = (c) => { try { localStorage.setItem(KEY_ROOM, c); } catch (err) { /* ignore */ } };
+  function loadGroup() {
+    try {
+      const g = JSON.parse(localStorage.getItem(KEY_GROUP) || 'null');
+      if (g && Array.isArray(g.players) && g.players.length) return g;
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+  function loadSnap() {
+    try {
+      const sn = JSON.parse(localStorage.getItem(KEY_SNAP) || 'null');
+      if (sn && Date.now() - sn.at < 12 * 3600 * 1000 && (sn.phase === 'result' || sn.phase === 'final') && sn.round > 0 && sn.cfg) return sn;
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+  const clearSnap = () => { try { localStorage.removeItem(KEY_SNAP); } catch (err) { /* ignore */ } };
+  function loadLast() {
+    try {
+      const l = JSON.parse(localStorage.getItem(KEY_LAST) || 'null');
+      if (l && typeof l.code === 'string' && Date.now() - (l.at || 0) < 24 * 3600 * 1000) return l;
+    } catch (err) { /* ignore */ }
+    return null;
+  }
+
+  /** Merkt Gruppe (Geräte + Namen) und – zwischen den Runden – den Spielstand. */
+  function persist() {
+    if (!G) return;
+    try {
+      const ps = G.players.filter((p) => p.id !== 'hub').map((p) => ({ cid: p.id, name: p.name, color: p.color }));
+      if (ps.length) localStorage.setItem(KEY_GROUP, JSON.stringify({ mode: cfg().mode, players: ps, at: Date.now() }));
+      if ((G.phase === 'result' || G.phase === 'final') && G.round > 0 && G.cfg) {
+        localStorage.setItem(KEY_SNAP, JSON.stringify({
+          at: Date.now(), code: net.code, phase: G.phase, round: G.round, used: G.used, letter: G.letter,
+          cfg: G.cfg, roundCats: G.roundCats, breakdown: G.breakdown, mode: G.cfg.mode, hubName: S.hubPlays ? S.name : '',
+          players: G.players.map((p) => ({ id: p.id, name: p.name, color: p.color, total: p.total, roundPts: p.roundPts, input: p.input })),
+        }));
+      }
+    } catch (err) { /* Speicher voll / gesperrt */ }
   }
 
   function newCode() {
@@ -283,11 +528,15 @@
   }
 
   /** Erstellt ein neues Spiel auf diesem Gerät. */
-  function createGame(mode, hostName) {
+  function createGame(mode, hostName, useGroup) {
     settings.mode = mode;
     saveSettings();
     S.role = 'hub';
     S.hubPlays = mode === 'nohost';
+    try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ }
+    clearSnap();
+    net.code = loadRoom() || newCode();
+    saveRoom(net.code);
     G = { phase: 'lobby', round: 0, letter: '', used: [], cfg: null, players: [], roundCats: [], stop: null,
           startedAt: 0, frozen: 0, running: false, evalIndex: 0, hostPoints: {}, breakdown: {}, timers: {} };
     if (S.hubPlays) {
@@ -299,6 +548,40 @@
       me.input = pref();
       G.players.push(me);
     }
+    const group = useGroup ? loadGroup() : null;
+    if (group) {
+      // bekannte Geräte: stehen als "wartet" in der Lobby und verbinden sich von selbst wieder
+      group.players.slice(0, MAX_PLAYERS - G.players.length).forEach((gp) => {
+        if (!gp || typeof gp.cid !== 'string' || gp.cid === 'hub' || findPlayer(gp.cid)) return;
+        const p = makePlayer(gp.cid, uniqueName(cleanName(gp.name) || 'Spieler'));
+        p.color = COLORS.includes(gp.color) && !G.players.some((x) => x.color === gp.color) ? gp.color : nextColor();
+        p.online = false;
+        G.players.push(p);
+      });
+    }
+    startPeer();
+    requestWake();
+    touch();
+  }
+
+  /** Nach Neuladen: Spiel zwischen zwei Runden fortsetzen (Geräte verbinden sich selbst wieder). */
+  function resumeGame() {
+    const sn = loadSnap();
+    if (!sn) return;
+    S.role = 'hub';
+    S.hubPlays = sn.mode === 'nohost';
+    try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ }
+    G = { phase: sn.phase, round: sn.round, letter: sn.letter || '', used: sn.used || [], cfg: sn.cfg, players: [], roundCats: sn.roundCats || [],
+          stop: null, startedAt: 0, frozen: 0, running: false, evalIndex: 0, hostPoints: {}, breakdown: sn.breakdown || {}, timers: {} };
+    sn.players.forEach((sp) => {
+      const p = makePlayer(sp.id, sp.name);
+      p.color = sp.color; p.total = sp.total || 0; p.roundPts = sp.roundPts || 0; p.input = sp.input === 'draw' ? 'draw' : 'text';
+      p.online = sp.id === 'hub';
+      G.players.push(p);
+    });
+    if (S.hubPlays) { S.cid = 'hub'; S.name = sn.hubName || getSavedName() || 'Spielleiter'; }
+    net.code = sn.code;
+    saveRoom(net.code);
     startPeer();
     requestWake();
     touch();
@@ -309,7 +592,7 @@
     net.status = 'connecting';
     const peer = new window.Peer('slf-' + net.code, { debug: 0 });
     net.peer = peer;
-    peer.on('open', () => { if (net.peer === peer) { net.status = 'ready'; renderApp(); } });
+    peer.on('open', () => { if (net.peer === peer) { net.status = 'ready'; net.retry = 0; renderApp(); } });
     peer.on('connection', onConn);
     peer.on('disconnected', () => {
       if (net.peer !== peer || peer.destroyed) return;
@@ -324,10 +607,12 @@
     peer.on('error', (err) => {
       if (net.peer !== peer) return;
       if (err && err.type === 'unavailable-id') {
+        // Die alte Sitzung hängt noch beim Vermittlungsserver: erst warten (Code bleibt gleich), dann neuer Code.
         net.peer = null;
         try { peer.destroy(); } catch (e) { /* ignore */ }
-        net.code = newCode();
-        setTimeout(startPeer, 200);
+        net.retry = (net.retry || 0) + 1;
+        if (net.retry <= 3) { net.status = 'connecting'; renderApp(); setTimeout(startPeer, 3000); }
+        else { net.retry = 0; net.code = newCode(); saveRoom(net.code); setTimeout(startPeer, 200); }
       } else if (err && ['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) {
         net.status = 'error'; renderApp();
       }
@@ -359,6 +644,7 @@
       G.players.push(p);
     }
     p.input = msg.input === 'draw' ? 'draw' : 'text';
+    if (G.phase === 'lobby') { const nm = cleanName(msg.name); if (nm && nm.toLowerCase() !== p.name.toLowerCase()) p.name = uniqueName(nm, p.id); }
     const old = net.conns.get(cid);
     net.conns.set(cid, conn);
     if (old && old !== conn) { try { old.close(); } catch (err) { /* ignore */ } }
@@ -421,6 +707,7 @@
   /** Nach jeder Änderung: Hub-Anzeige sofort, Mitspieler kurz gebündelt. */
   function touch() {
     if (!G) return;
+    persist();
     if (S.hubPlays) applyState(publicState('hub'));
     renderApp();
     clearTimeout(broadcastTimer);
@@ -446,12 +733,13 @@
   function canStart() {
     const cats = settings.cats.filter((c) => c.on).length;
     const need = settings.mode === 'nohost' ? 2 : 1;
-    return cats >= 1 && G.players.length >= need;
+    return cats >= 1 && G.players.filter((p) => p.online).length >= need;
   }
 
   function startGame() {
     if (!G || G.phase !== 'lobby' || !canStart()) return;
     G.cfg = JSON.parse(JSON.stringify(settings));
+    G.players = G.players.filter((p) => p.online);          // wer nicht da ist, spielt nicht mit
     G.players.forEach((p) => { p.total = 0; p.roundPts = 0; });
     G.round = 0;
     G.used = [];
@@ -496,6 +784,7 @@
     G.running = false;
     G.frozen = Date.now() - G.startedAt;
     G.stop = null;
+    if (!S.hubPlays) Sfx.buzz();
     touch();
     G.players.forEach((p) => {
       if (p.id === 'hub') onHubMessage({ t: 'lock' });
@@ -670,7 +959,7 @@
      4. CLIENT: VERBINDUNG ZUM HUB + NACHRICHTEN AN DIE OBERFLÄCHE
      =========================================================================== */
   function resetRoundLocal() {
-    S.text = {}; S.draw = {}; S.votesSent = false; S.evalData = null;
+    S.text = {}; S.draw = {}; S.strokes = {}; S.votesSent = false; S.evalData = null;
   }
 
   /** Neuen Spielzustand übernehmen (Mitspieler-Sicht). */
@@ -678,6 +967,7 @@
     msg.recvAt = Date.now();
     const prev = S.view;
     if (msg.phase === 'lobby' || (msg.phase === 'roll' && (!prev || prev.phase !== 'roll' || prev.round !== msg.round))) resetRoundLocal();
+    if (msg.phase === 'collect' && (!prev || prev.phase !== 'collect')) Sfx.buzz();
     S.view = msg;
     render();
   }
@@ -688,15 +978,15 @@
     switch (msg.t) {
       case 'state': applyState(msg); break;
       case 'welcome':
-        S.net = 'online'; S.netMsg = ''; S.name = msg.name || S.name;
-        try { sessionStorage.setItem(KEY_SESSION, JSON.stringify({ code: net.code, name: S.name })); } catch (err) { /* ignore */ }
+        S.net = 'online'; S.netMsg = ''; S.name = msg.name || S.name; S.resuming = false; S.failCount = 0;
+        try { localStorage.setItem(KEY_LAST, JSON.stringify({ code: net.code, name: S.name, at: Date.now() })); } catch (err) { /* ignore */ }
         render();
         break;
       case 'reject':
       case 'kicked':
         S.joinError = msg.t === 'kicked' ? 'Du wurdest aus dem Spiel entfernt.' : (msg.reason || 'Beitritt nicht möglich.');
-        S.halted = true;
-        try { sessionStorage.removeItem(KEY_SESSION); } catch (err) { /* ignore */ }
+        S.halted = true; S.resuming = false;
+        try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ }
         render();
         break;
       case 'evaldata': S.evalData = msg; render(); break;
@@ -747,6 +1037,7 @@
     });
     peer.on('error', (err) => {
       if (S.peer !== peer) return;
+      if (S.resuming && err && err.type === 'peer-unavailable' && ++S.failCount >= 4) { abortConnect('Das letzte Spiel wurde nicht gefunden.'); return; }
       S.net = 'offline';
       S.netMsg = err && err.type === 'peer-unavailable' ? 'Spiel nicht gefunden – läuft es noch?' : 'Verbindung getrennt – versuche erneut …';
       render(); retry();
@@ -754,9 +1045,20 @@
   }
 
   function leaveGame() {
-    try { sessionStorage.removeItem(KEY_SESSION); } catch (err) { /* ignore */ }
+    try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ }
+    if (S.role === 'hub') clearSnap();
     location.hash = '';
     location.reload();
+  }
+
+  /** Verbindungsversuch beenden und zur Startseite (das letzte Spiel bleibt gemerkt). */
+  function abortConnect(msg) {
+    S.halted = true; S.resuming = false; S.failCount = 0;
+    clearTimeout(S.retry);
+    if (S.peer) { const old = S.peer; S.peer = null; S.conn = null; try { old.destroy(); } catch (err) { /* ignore */ } }
+    S.role = null; S.view = null; S.page = 'landing';
+    if (msg) toast(msg, 'error');
+    render();
   }
 
   /* ---- eigene Antworten einsammeln (bei "lock" vom Hub) -------------------- */
@@ -866,8 +1168,30 @@
 
   /* ---- Startseite --------------------------------------------------------- */
   function buildLanding(root) {
+    const snap = loadSnap();
+    const last = loadLast();
+    const cards = [];
+    if (snap) {
+      const names = snap.players.map((p) => p.name);
+      cards.push(h('div', { class: 'card resume-card' },
+        h('h2', { class: 'card-title' }, ico('fa-clock-rotate-left'), 'Spiel fortsetzen'),
+        h('p', { class: 'muted' }, 'Runde ' + snap.round + ' von ' + snap.cfg.rounds + ' – ' + (snap.mode === 'host' ? 'Mit Host' : 'Ohne Host')),
+        h('div', { class: 'chips' }, names.map((n) => h('span', { class: 'chip' }, n))),
+        h('div', { class: 'btn-row' },
+          h('button', { class: 'btn btn-link', onClick: () => { clearSnap(); cur.key = null; render(); } }, 'Verwerfen'),
+          h('button', { class: 'btn btn-primary', onClick: resumeGame }, ico('fa-play'), 'Fortsetzen'))));
+    }
+    if (last) {
+      cards.push(h('div', { class: 'card resume-card' },
+        h('h2', { class: 'card-title' }, ico('fa-rotate-right'), 'Wieder beitreten'),
+        h('p', { class: 'muted' }, 'Zuletzt dabei als ', h('b', null, last.name), ' (Code ' + last.code.toUpperCase() + ')'),
+        h('div', { class: 'btn-row' },
+          h('button', { class: 'btn btn-link', onClick: () => { try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ } cur.key = null; render(); } }, 'Vergessen'),
+          h('button', { class: 'btn btn-primary', onClick: () => { S.resuming = true; S.failCount = 0; joinGame(last.code, last.name); } }, 'Beitreten'))));
+    }
     root.append(
       brandBlock(),
+      ...cards,
       h('div', { class: 'card start-card' },
         h('p', { class: 'lead' }, 'Der Klassiker für den Spieleabend – jeder schreibt oder zeichnet am eigenen Handy.'),
         h('button', { class: 'btn btn-primary btn-big', onClick: () => { S.page = 'create'; render(); } }, ico('fa-plus'), 'Spiel erstellen'),
@@ -894,26 +1218,31 @@
       nameRow.hidden = m !== 'nohost';
     }
     pick(mode);
+    const group = loadGroup();
+    const groupBox = group ? h('input', { type: 'checkbox', id: 'use-group', checked: true }) : null;
+    const groupRow = group ? h('label', { class: 'check-row', for: 'use-group' }, groupBox,
+      h('span', null, 'Gleiche Mitspieler wie zuletzt: ', h('b', null, group.players.map((p) => p.name).join(', ')))) : null;
     root.append(
       brandBlock(true),
       h('div', { class: 'card' },
         h('h2', { class: 'card-title' }, 'Wie wollt ihr spielen?'),
         h('div', { class: 'mode-cards' }, optHost, optNo),
         nameRow,
+        groupRow,
         h('div', { class: 'btn-row' },
           h('button', { class: 'btn btn-secondary', onClick: () => { S.page = 'landing'; render(); } }, ico('fa-arrow-left'), 'Zurück'),
           h('button', {
             class: 'btn btn-primary',
             onClick: () => {
               if (mode === 'nohost' && !cleanName(nameInput.value)) { toast('Bitte gib deinen Namen ein.', 'error'); nameInput.focus(); return; }
-              createGame(mode, nameInput.value);
+              createGame(mode, nameInput.value, !!(groupBox && groupBox.checked));
             },
           }, 'Lobby öffnen', ico('fa-arrow-right')))));
   }
 
   function buildJoin(root) {
     const m = location.hash.match(/join=([A-Za-z0-9]+)/);
-    const codeInput = h('input', { class: 'input code-input', type: 'text', maxlength: 6, placeholder: 'Code', autocomplete: 'off', autocapitalize: 'characters', value: m ? m[1].toUpperCase() : '' });
+    const codeInput = h('input', { class: 'input code-input', type: 'text', maxlength: 6, placeholder: 'Code', autocomplete: 'off', autocapitalize: 'characters', value: m ? m[1].toUpperCase() : (loadLast() ? loadLast().code.toUpperCase() : '') });
     const nameInput = h('input', { class: 'input', type: 'text', maxlength: 16, placeholder: 'Dein Name', autocomplete: 'off', value: getSavedName() });
     const err = h('p', { class: 'form-error', hidden: !S.joinError }, S.joinError);
     const go = () => {
@@ -939,13 +1268,13 @@
 
   function buildConnecting(root) {
     root.append(brandBlock(true), h('div', { class: 'card center' },
-      h('p', null, ico('fa-spinner', 'fa-spin'), ' Verbinde mit dem Spiel …'),
-      h('button', { class: 'btn btn-secondary', onClick: leaveGame }, 'Abbrechen')));
+      h('p', null, ico('fa-spinner', 'fa-spin'), S.resuming ? ' Verbinde mit deinem letzten Spiel …' : ' Verbinde mit dem Spiel …'),
+      h('button', { class: 'btn btn-secondary', onClick: () => abortConnect() }, 'Zur Startseite')));
   }
   function buildJoinError(root) {
     root.append(brandBlock(true), h('div', { class: 'card center' },
       h('p', { class: 'form-error' }, ico('fa-circle-exclamation'), ' ', S.joinError),
-      h('button', { class: 'btn btn-primary', onClick: leaveGame }, 'Zur Startseite')));
+      h('button', { class: 'btn btn-primary', onClick: () => { S.role = null; S.view = null; S.halted = false; S.page = 'landing'; S.joinError = ''; render(); } }, 'Zur Startseite')));
   }
 
   /* ---- Lobby --------------------------------------------------------------- */
@@ -966,7 +1295,7 @@
     return v.players.map((p) => h('li', { class: 'player' + (p.online ? '' : ' is-off') },
       h('i', { class: 'dot', style: 'background:' + p.color }),
       h('span', { class: 'p-name' }, p.name, p.id === v.you ? h('em', null, ' (du)') : null),
-      p.online ? ico('fa-wifi', 'p-on') : ico('fa-circle-xmark', 'p-off'),
+      p.online ? ico('fa-wifi', 'p-on') : (v.phase === 'lobby' ? h('span', { class: 'p-wait', title: 'wartet auf Verbindung' }, ico('fa-hourglass-half'), ' wartet') : ico('fa-circle-xmark', 'p-off')),
       withKick && p.id !== 'hub' ? h('button', { class: 'icon-btn', title: 'Entfernen', 'aria-label': p.name + ' entfernen', onClick: () => kick(p.id) }, ico('fa-xmark')) : null));
   }
 
@@ -1043,7 +1372,8 @@
       const need = settings.mode === 'nohost' ? 2 : 1;
       const catCount = settings.cats.filter((c) => c.on).length;
       startBtn.disabled = !canStart();
-      hint.textContent = catCount < 1 ? 'Wähle mindestens eine Kategorie.' : (G.players.length < need ? 'Es braucht mindestens ' + need + (need === 1 ? ' Mitspieler.' : ' Spieler.') : '');
+      const onlineN = G.players.filter((p) => p.online).length;
+      hint.textContent = catCount < 1 ? 'Wähle mindestens eine Kategorie.' : (onlineN < need ? 'Es braucht mindestens ' + need + (need === 1 ? ' Mitspieler.' : ' Spieler.') + (G.players.length > onlineN ? ' Bekannte Geräte verbinden sich von selbst wieder.' : '') : (G.players.length > onlineN ? 'Wer nicht rechtzeitig da ist, spielt nicht mit.' : ''));
       roundsVal.textContent = settings.rounds;
       hardSw.checked = settings.hard;
       inputSeg.sync(settings.input);
@@ -1165,9 +1495,10 @@
     const steps = 26;
     let i = 0, t = null;
     const tick = () => {
-      if (i >= steps) { slot.textContent = v.letter; slot.classList.remove('is-spin'); slot.classList.add('is-final'); return; }
+      if (i >= steps) { slot.textContent = v.letter; slot.classList.remove('is-spin'); slot.classList.add('is-final'); Sfx.ding(); return; }
       slot.textContent = letters[Math.floor(Math.random() * letters.length)];
       slot.classList.add('is-spin');
+      Sfx.clack();
       i++;
       t = setTimeout(tick, 45 + i * i * 0.35);
     };
@@ -1213,7 +1544,7 @@
       });
       const stopping = v.phase === 'stopping' && v.stop;
       overlay.hidden = !stopping;
-      if (stopping) { soBig.textContent = stopRemaining(v); soBy.textContent = v.stop.by + ' hat Stopp gedrückt!'; }
+      if (stopping) { soBig.textContent = stopRemaining(v); soBy.textContent = v.stop.by + ' hat Stopp gedrückt!'; stopTick(v); }
     }
     const id = setInterval(update, 250);
     ctx.cleanup(() => clearInterval(id));
@@ -1222,64 +1553,98 @@
   }
 
   /* ---- Mitspieler-Ansicht während der Runde ------------------------------- */
-  function exportPng(cv, w, hgt) {
-    const tmp = document.createElement('canvas');
-    tmp.width = w; tmp.height = hgt;
-    const c = tmp.getContext('2d');
-    if (!c) return cv.toDataURL('image/png');
-    c.drawImage(cv, 0, 0, w, hgt);
-    return tmp.toDataURL('image/png');
-  }
+  // Zeichenfläche: feste logische Breite (360), Höhe nach Wunsch. Striche werden als
+  // Vektoren gemerkt – dadurch geht Rückgängig und die Größe lässt sich jederzeit ändern.
+  const PAD_W = 360;
+  const PAD_H = { M: 100, L: 170, XL: 250 };
+  const PEN_W = { s: 2.4, m: 4, l: 7 };
+  const getPadSize = () => { try { const v = localStorage.getItem(KEY_PAD); if (PAD_H[v]) return v; } catch (err) { /* ignore */ } return 'L'; };
+  const setPadSize = (v) => { try { localStorage.setItem(KEY_PAD, v); } catch (err) { /* ignore */ } };
+  const getPen = () => { try { const v = localStorage.getItem(KEY_PEN); if (PEN_W[v]) return v; } catch (err) { /* ignore */ } return 'm'; };
+  const setPen = (v) => { try { localStorage.setItem(KEY_PEN, v); } catch (err) { /* ignore */ } };
+
   function localFilled(v) {
     return v.cats.filter((c) => (S.text[c.id] || '').trim() || S.draw[c.id]).length;
   }
 
+  function styleStroke(c, w) { c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = '#27231d'; }
+  function drawStroke(c, st) {
+    if (!st.pts.length) return;
+    styleStroke(c, st.w);
+    c.beginPath();
+    c.moveTo(st.pts[0][0], st.pts[0][1]);
+    if (st.pts.length === 1) c.lineTo(st.pts[0][0] + 0.01, st.pts[0][1] + 0.01);
+    for (let i = 1; i < st.pts.length; i++) c.lineTo(st.pts[i][0], st.pts[i][1]);
+    c.stroke();
+  }
+  /** Striche -> kleines PNG (transparent), das an den Hub geschickt wird. */
+  function exportStrokes(strokes, H) {
+    if (!strokes.length) return null;
+    const tmp = document.createElement('canvas');
+    tmp.width = PAD_W; tmp.height = H;
+    const c = tmp.getContext('2d');
+    if (!c) return null;
+    strokes.forEach((st) => drawStroke(c, st));
+    return tmp.toDataURL('image/png');
+  }
+
   function drawPad(cat, v) {
-    const cv = h('canvas', { class: 'pad', 'aria-label': 'Zeichenfläche ' + cat.name });
-    let c2 = null, cssW = 300, cssH = 96, down = false;
+    const H = PAD_H[getPadSize()];
+    const strokes = S.strokes[cat.id] || (S.strokes[cat.id] = []);
+    const cv = h('canvas', { class: 'pad', style: 'aspect-ratio:' + PAD_W + '/' + H, 'aria-label': 'Zeichenfläche ' + cat.name });
+    let c2 = null, down = false, cur = null;
+    function redraw() {
+      if (!c2) return;
+      c2.clearRect(0, 0, PAD_W, H);
+      strokes.forEach((st) => drawStroke(c2, st));
+    }
     function setup() {
       const r = cv.getBoundingClientRect();
-      cssW = Math.max(200, Math.round(r.width) || 300);
-      cssH = Math.round(r.height) || 96;
+      const cssW = Math.max(200, Math.round(r.width) || PAD_W);
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      cv.width = cssW * dpr; cv.height = cssH * dpr;
+      cv.width = Math.round(cssW * dpr);
+      cv.height = Math.round((cssW * dpr * H) / PAD_W);
       c2 = cv.getContext('2d');
       if (!c2) return;
-      c2.setTransform(dpr, 0, 0, dpr, 0, 0);
-      c2.lineWidth = 3.2; c2.lineCap = 'round'; c2.lineJoin = 'round'; c2.strokeStyle = '#27231d';
-      if (S.draw[cat.id]) { const img = new Image(); img.onload = () => c2.drawImage(img, 0, 0, cssW, cssH); img.src = S.draw[cat.id]; }
+      const k = cv.width / PAD_W;
+      c2.setTransform(k, 0, 0, k, 0, 0);
+      redraw();
     }
-    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (cssW / (r.width || cssW)), y: (e.clientY - r.top) * (cssH / (r.height || cssH)) }; };
+    const pos = (e) => {
+      const r = cv.getBoundingClientRect();
+      return [(e.clientX - r.left) * (PAD_W / (r.width || PAD_W)), (e.clientY - r.top) * (H / (r.height || H))];
+    };
+    const commit = () => {
+      const url = exportStrokes(strokes, H);
+      if (url) S.draw[cat.id] = url; else delete S.draw[cat.id];
+      send({ t: 'filled', n: localFilled(v) });
+    };
     cv.addEventListener('pointerdown', (e) => {
       if (!c2) setup();
       if (!c2) return;
       down = true;
       try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      const p = pos(e);
-      c2.beginPath(); c2.moveTo(p.x, p.y); c2.lineTo(p.x + 0.01, p.y + 0.01); c2.stroke();
+      cur = { w: PEN_W[getPen()], pts: [pos(e)] };
+      strokes.push(cur);
+      drawStroke(c2, cur);
       e.preventDefault();
     });
     cv.addEventListener('pointermove', (e) => {
-      if (!down || !c2) return;
+      if (!down || !c2 || !cur) return;
       const p = pos(e);
-      c2.lineTo(p.x, p.y); c2.stroke(); c2.beginPath(); c2.moveTo(p.x, p.y);
+      const prev = cur.pts[cur.pts.length - 1];
+      cur.pts.push(p);
+      styleStroke(c2, cur.w);
+      c2.beginPath(); c2.moveTo(prev[0], prev[1]); c2.lineTo(p[0], p[1]); c2.stroke();
       e.preventDefault();
     });
-    const up = () => {
-      if (!down) return;
-      down = false;
-      S.draw[cat.id] = exportPng(cv, cssW, cssH);
-      send({ t: 'filled', n: localFilled(v) });
-    };
+    const up = () => { if (!down) return; down = false; cur = null; commit(); };
     cv.addEventListener('pointerup', up);
     cv.addEventListener('pointercancel', up);
-    const clear = h('button', { type: 'button', class: 'icon-btn pad-clear', title: 'Löschen', 'aria-label': cat.name + ' löschen', onClick: () => {
-      if (c2) c2.clearRect(0, 0, cssW, cssH);
-      delete S.draw[cat.id];
-      send({ t: 'filled', n: localFilled(v) });
-    } }, ico('fa-eraser'));
+    const undo = h('button', { type: 'button', class: 'icon-btn pad-btn', title: 'Rückgängig', 'aria-label': cat.name + ': letzten Strich zurücknehmen', onClick: () => { strokes.pop(); redraw(); commit(); } }, ico('fa-rotate-left'));
+    const clear = h('button', { type: 'button', class: 'icon-btn pad-btn', title: 'Alles löschen', 'aria-label': cat.name + ' löschen', onClick: () => { strokes.length = 0; redraw(); commit(); } }, ico('fa-eraser'));
     requestAnimationFrame(setup);
-    return h('div', { class: 'pad-wrap' }, cv, clear);
+    return h('div', { class: 'pad-wrap' }, cv, h('div', { class: 'pad-btns' }, undo, clear));
   }
 
   function buildClientPlay(root, ctx) {
@@ -1290,6 +1655,11 @@
     const timer = timerEl(ctx, 'timer-sm');
     const seg = segmented([{ k: 'text', label: 'Tippen', icon: 'fa-keyboard' }, { k: 'draw', label: 'Zeichnen', icon: 'fa-pencil' }], pref(),
       (k) => { setPref(k); send({ t: 'pref', input: k }); fill(); });
+    const tools = h('div', { class: 'draw-tools' },
+      h('div', { class: 'tool-row' }, h('span', { class: 'tool-label' }, ico('fa-pen'), 'Stift'),
+        segmented([{ k: 's', label: 'Dünn' }, { k: 'm', label: 'Mittel' }, { k: 'l', label: 'Dick' }], getPen(), (k) => setPen(k))),
+      h('div', { class: 'tool-row' }, h('span', { class: 'tool-label' }, ico('fa-expand'), 'Fläche'),
+        segmented([{ k: 'M', label: 'Klein' }, { k: 'L', label: 'Groß' }, { k: 'XL', label: 'Riesig' }], getPadSize(), (k) => { setPadSize(k); fill(); })));
     const stopBtn = h('button', { class: 'btn btn-stop btn-big', onClick: () => send({ t: 'stop' }) }, ico('fa-hand'), 'STOPP');
     const timers = {};
 
@@ -1316,6 +1686,7 @@
     }
 
     function fill() {
+      tools.hidden = pref() !== 'draw';
       list.innerHTML = '';
       v0.cats.forEach((cat) => {
         list.append(h('div', { class: 'field' },
@@ -1330,7 +1701,7 @@
         h('div', { class: 'letter-badge', 'aria-label': 'Gesuchter Buchstabe' }, v0.letter),
         h('div', { class: 'play-meta' }, h('span', { class: 'chip' }, 'Runde ' + v0.round + ' / ' + v0.rounds), timer),
         seg),
-      banner, lockBox, list,
+      banner, lockBox, tools, list,
       h('div', { class: 'stop-bar' }, stopBtn));
     fill();
 
@@ -1339,7 +1710,7 @@
       if (!v) return;
       const stopping = v.phase === 'stopping' && v.stop;
       banner.hidden = !stopping;
-      if (stopping) banner.textContent = v.stop.by + ' hat STOPP gedrückt – noch ' + stopRemaining(v) + ' s!';
+      if (stopping) { banner.textContent = v.stop.by + ' hat STOPP gedrückt – noch ' + stopRemaining(v) + ' s!'; stopTick(v); }
       const locked = v.phase === 'collect';
       lockBox.hidden = !locked;
       list.classList.toggle('is-locked', locked);
@@ -1560,20 +1931,26 @@
           h('button', { class: 'btn btn-link', onClick: leaveGame }, 'Beenden'))
         : h('div', { class: 'btn-col' }, h('p', { class: 'muted center' }, 'Danke fürs Mitspielen!'), h('button', { class: 'btn btn-link', onClick: leaveGame }, 'Spiel verlassen')));
     startConfetti(canvas, ctx);
+    setTimeout(() => Sfx.fanfare(), 250);
   }
 
   /* ===========================================================================
      8. START
      =========================================================================== */
   function boot() {
+    initThemeUI();
+    applyTheme();
     const m = location.hash.match(/join=([A-Za-z0-9]+)/);
-    let session = null;
-    try { session = JSON.parse(sessionStorage.getItem(KEY_SESSION) || 'null'); } catch (err) { /* ignore */ }
-    if (session && session.code && (!m || m[1].toLowerCase() === session.code)) {
-      joinGame(session.code, session.name || getSavedName() || 'Spieler');   // nach Neuladen wieder verbinden
+    const last = loadLast();
+    if (m) {
+      const code = m[1].toLowerCase();
+      if (last && last.code === code) { S.resuming = true; joinGame(code, last.name); return; }   // bekanntes Spiel: direkt rein
+      S.page = 'join';
+      render();
       return;
     }
-    S.page = m ? 'join' : 'landing';
+    if (last) { S.resuming = true; joinGame(last.code, last.name); return; }                      // automatisch zurück ins letzte Spiel
+    S.page = 'landing';
     render();
   }
 
