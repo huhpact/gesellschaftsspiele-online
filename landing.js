@@ -10,15 +10,22 @@ function setTheme(t) {
 let t = 'paper'; try { t = localStorage.getItem('theme') || 'paper'; } catch (e) {}
 setTheme(t);
 $$('.tp,.tcard').forEach(b => b.addEventListener('click', () => { setTheme(b.dataset.theme); $('#theme-pop').hidden = true; }));
+function closeMenu() { $('#menu').classList.remove('open'); $('#burger').setAttribute('aria-expanded', 'false'); }
+function closePop() { $('#theme-pop').hidden = true; $('#theme-btn').setAttribute('aria-expanded', 'false'); }
 $('#theme-btn').addEventListener('click', e => {
   const p = $('#theme-pop'); p.hidden = !p.hidden; e.currentTarget.setAttribute('aria-expanded', !p.hidden);
+  if (!p.hidden) closeMenu();
 });
-document.addEventListener('click', e => { if (!e.target.closest('.theme-wrap')) $('#theme-pop').hidden = true; });
+document.addEventListener('click', e => { if (!e.target.closest('.theme-wrap')) closePop(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePop(); closeMenu(); } });
 
 /* Mobile-Menü */
 $('#burger').addEventListener('click', e => {
   const open = $('#menu').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', open);
+  if (open) closePop();
 });
+document.addEventListener('click', e => { if (!e.target.closest('.nav')) closeMenu(); });
+window.addEventListener('resize', () => { if (innerWidth > 1100) closeMenu(); });
 $$('#menu a').forEach(a => a.addEventListener('click', () => $('#menu').classList.remove('open')));
 
 /* Beispiel-QR (nur Deko) */
