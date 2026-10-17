@@ -1571,10 +1571,7 @@
       h('div', { class: 'card' },
         h('h2', { class: 'card-title' }, ico('fa-list-check'), 'Decks prüfen'),
         h('p', { class: 'muted' }, 'Hier siehst du, ob alle Karten vollständig sind: Pflichtwerte, Bilder und Doppelungen werden kontrolliert.'),
-        h('ol', { class: 'steps' },
-          h('li', null, 'Neue Datei in ', h('code', null, 'decks/'), ' anlegen (Vorlage: ', h('code', null, '_vorlage.js'), ').'),
-          h('li', null, 'Dateinamen in ', h('code', null, 'decks/decks.js'), ' eintragen.'),
-          h('li', null, 'Seite neu laden und hier kontrollieren.')),
+       
         DECK_ERRORS.length ? h('div', { class: 'check-msgs is-err' }, h('ul', { class: 'plain-list' }, DECK_ERRORS.map((e) => h('li', null, ico('fa-circle-xmark'), ' ' + e)))) : null,
         h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-secondary', onClick: back }, ico('fa-arrow-left'), 'Zurück'))),
       decksEl,
