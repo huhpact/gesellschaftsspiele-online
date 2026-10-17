@@ -46,5 +46,13 @@ window.QUARTETT_DECKS.push({
     { id: 'ftype', name: "Jaguar F-Type R", img: 'decks/img/autos/ftype.avif', values: { ps: 575, vmax: 300, acc: 3.5, weight: 1730, price: 110 } },
     { id: 'citroen2cv', name: "Citroën 2 CV", img: 'decks/img/autos/citroen2cv.webp', values: { ps: 29, vmax: 115, acc: 40, weight: 560, price: 8 } },
     { id: 'model3', name: "Tesla Model 3 Performance", img: 'decks/img/autos/model3.jpg', values: { ps: 513, vmax: 261, acc: 3.1, weight: 1850, price: 60 } },
+    { id: 'roadster2', name: "Tesla Roadster 2", img: 'decks/img/autos/roadster2.webp', values: { ps: 1341, vmax: 370, acc: 1.0, weight: 1700, price: 300 } },
+    { id: 'cybertruck', name: "Tesla Cybertruck Cyberbeast", img: 'decks/img/autos/cybertruck.jpg', values: { ps: 857, vmax: 209, acc: 2.7, weight: 3104, price: 95 } },
+    { id: 'gwagon', name: "Mercedes-AMG G 63", img: 'decks/img/autos/gwagon.avif', values: { ps: 585, vmax: 220, acc: 4.4, weight: 2640, price: 200 } },
+    { id: 'revuelto', name: "Lamborghini Revuelto", img: 'decks/img/autos/revuelto.avif', values: { ps: 1015, vmax: 350, acc: 2.5, weight: 1847, price: 500 } },
+    { id: 'elroq', name: "Škoda Elroq 85", img: 'decks/img/autos/elroq.webp', values: { ps: 286, vmax: 180, acc: 6.6, weight: 2138, price: 46.9 } },
+    { id: 'cayenne', name: "Porsche Cayenne", img: 'decks/img/autos/cayenne.webp', values: { ps: 353, vmax: 248, acc: 6.0, weight: 2055, price: 101.5 } },
+    { id: 'jesko', name: "Koenigsegg Jesko Absolut", img: 'decks/img/autos/jesko.jpg', values: { ps: 1600, vmax: 531, acc: 2.46, weight: 1390, price: 5000 } },
+    { id: 'golf5', name: "Volkswagen Golf V GTI", img: 'decks/img/autos/golf5.jpg', values: { ps: 200, vmax: 235, acc: 7.2, weight: 1336, price: 5 } },
   ],
 });

@@ -47,6 +47,13 @@ window.QUARTETT_DECKS.push({
     { id: 'lu', name: "Luxemburg", img: 'decks/img/laender/lu.webp', values: { pop: 0.66, area: 2.6, density: 253, peak: 560, gdp: 128 } },
     { id: 'ro', name: "Rumänien", img: 'decks/img/laender/ro.webp', values: { pop: 19, area: 238, density: 80, peak: 2544, gdp: 17 } },
     { id: 'ad', name: "Andorra", img: 'decks/img/laender/ad.webp', values: { pop: 0.084, area: 0.468, density: 178, peak: 2943, gdp: 74 } },
+    { id: 'rs', name: "Serbien", img: 'decks/img/laender/rs.svg', values: { pop: 6.6, area: 88, density: 74, peak: 2169, gdp: 15 } },
+    { id: 'mk', name: "Nordmazedonien", img: 'decks/img/laender/mk.webp', values: { pop: 1.8, area: 25, density: 71, peak: 2764, gdp: 10.5 } },
+    { id: 'ru', name: "Russland", img: 'decks/img/laender/ru.webp', values: { pop: 144, area: 1710, density: 8, peak: 5642, gdp: 17.5 } },
+    { id: 'ua', name: "Ukraine", img: 'decks/img/laender/ua.webp', values: { pop: 39, area: 603, density: 65, peak: 2061, gdp: 5.9 } },
+    { id: 'va', name: "Vatikanstadt", img: 'decks/img/laender/va.webp', values: { pop: 0.001, area: 0.00041, density: 1000, peak: 75, gdp: 64 } },
+    { id: 'mc', name: "Monaco", img: 'decks/img/laender/mc.webp', values: { pop: 0.04, area: 0.002, density: 19000, peak: 161, gdp: 256 } },
+    { id: 'mt', name: "Malta", img: 'decks/img/laender/mt.webp', values: { pop: 0.5, area: 0.32, density: 1731, peak: 253, gdp: 41.7 } }
     
   ],
 });
