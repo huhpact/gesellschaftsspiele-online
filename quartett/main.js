@@ -92,7 +92,7 @@
       if (s && typeof s === 'object') {
         if (typeof s.deck === 'string') d.deck = s.deck;
         if ([0, 10, 20, 30, 50].includes(s.rounds)) d.rounds = s.rounds;
-        if ([0, 12, 16, 20, 24].includes(s.cardLimit)) d.cardLimit = s.cardLimit;
+        if ([0, 12, 16, 20, 24, 28, 32].includes(s.cardLimit)) d.cardLimit = s.cardLimit;
       }
     } catch (err) { /* ignore */ }
     return d;
@@ -1169,7 +1169,7 @@
     const startBtn = h('button', { class: 'btn btn-primary btn-big', onClick: startGame }, ico('fa-play'), 'Spiel starten');
     const limitSeg = segmented([{ k: 0, label: 'Aus' }, { k: 10, label: '10' }, { k: 20, label: '20' }, { k: 30, label: '30' }, { k: 50, label: '50' }], settings.rounds,
       (k) => { settings.rounds = k; saveSettings(); touch(); });
-    const cardSeg = segmented([{ k: 0, label: 'Alle' }, { k: 12, label: '12' }, { k: 16, label: '16' }, { k: 20, label: '20' }, { k: 24, label: '24' }], settings.cardLimit,
+    const cardSeg = segmented([{ k: 0, label: 'Alle' }, { k: 12, label: '12' }, { k: 16, label: '16' }, { k: 20, label: '20' }, { k: 24, label: '24' }, { k: 28, label: '28' }, { k: 32, label: '32' }], settings.cardLimit,
       (k) => { settings.cardLimit = k; saveSettings(); touch(); });
     const copyBtn = h('button', { class: 'btn btn-secondary btn-sm', onClick: async () => {
       try { await navigator.clipboard.writeText(joinLink()); toast('Link kopiert.', 'success'); } catch (err) { linkInput.select(); toast('Link markiert – bitte manuell kopieren.'); }
