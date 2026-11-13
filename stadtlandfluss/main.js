@@ -39,8 +39,12 @@
   const KEY_PEN = 'slf.pen.v1';           // Zeichenfläche: Stiftdicke
   // ---- KI-Prüfung: hier fest eintragen (läuft nur auf dem Hub-Gerät) ----------
   const AI_MODEL = 'claude-haiku-5-5';    // Modell (schnell + günstig)
-  const AI_PROXY_URL = '';                // BEVORZUGT: eigener Proxy, der den Schlüssel serverseitig hält (leer = direkt)
-  const AI_API_KEY = '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';                  // Alternative: Anthropic-API-Schlüssel (im Code für jeden sichtbar!)
+  // Standard: kostenlose KI ohne Schlüssel (Pollinations). Fällt sie aus, gilt automatisch die Punkte-Automatik.
+  // Für bessere Prüfung (Claude): eigenen Proxy eintragen, der den Schlüssel serverseitig hält. NIE den Schlüssel selbst hier eintragen.
+  const AI_PROXY_URL = '';                // leer = Pollinations ohne Schlüssel
+  const AI_API_KEY = '';                  // nur zum lokalen Testen, nicht veröffentlichen!
+  const KEYLESS_URL = 'https://text.pollinations.ai/openai';
+  const KEYLESS_MODEL = 'openai';
 
   const POINTS = [0, 5, 10, 20];
   const STOP_SECONDS = 5;                 // Nachlaufzeit nach "Stopp"
@@ -877,7 +881,7 @@
 
   /* ---- Automatische Punktevorschläge & KI-Prüfung ---------------------------- */
   const loadAI = () => ({ key: AI_API_KEY, url: AI_PROXY_URL, model: AI_MODEL });
-  const aiReady = () => !!(AI_API_KEY || AI_PROXY_URL);
+  const aiReady = () => true;
 
   /** Vergleichsschlüssel: ohne Akzente, Großschreibung, Artikel und Sonderzeichen. */
   function keyOf(txt) {
@@ -948,7 +952,7 @@
   /** Fragt die KI (direkt per API-Schlüssel oder über einen eigenen Proxy). Liefert { catId: { pid: {ok, why, canon} } }. */
   async function askAI(letter, cats, players) {
     const a = loadAI();
-    if (!a.key && !a.url) throw new Error('Kein KI-Zugang eingerichtet');
+    const keyless = !a.key && !a.url;
     const kategorien = cats.map((c) => ({
       id: c.id, name: c.name,
       antworten: players.filter((p) => p.answers[c.id] && p.answers[c.id].t === 'text' && startsWithLetter(p.answers[c.id].v, letter))
@@ -956,20 +960,25 @@
     })).filter((k) => k.antworten.length);
     if (!kategorien.length) return {};
     const headers = { 'content-type': 'application/json' };
-    if (!a.url) { headers['x-api-key'] = a.key; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
+    if (!keyless && !a.url) { headers['x-api-key'] = a.key; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
     const ctl = new AbortController();
     const to = setTimeout(() => ctl.abort(), 20000);
     try {
-      const res = await fetch(a.url || 'https://api.anthropic.com/v1/messages', {
+      const userMsg = JSON.stringify({ buchstabe: letter, kategorien });
+      const res = await fetch(keyless ? KEYLESS_URL : (a.url || 'https://api.anthropic.com/v1/messages'), {
         method: 'POST', headers, signal: ctl.signal,
-        body: JSON.stringify({ model: a.model || AI_MODEL, max_tokens: 4000, system: AI_SYSTEM, messages: [{ role: 'user', content: JSON.stringify({ buchstabe: letter, kategorien }) }] }),
+        body: JSON.stringify(keyless
+          ? { model: KEYLESS_MODEL, jsonMode: true, messages: [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: userMsg }] }
+          : { model: a.model || AI_MODEL, max_tokens: 4000, system: AI_SYSTEM, messages: [{ role: 'user', content: userMsg }] }),
       });
       if (!res.ok) throw new Error('KI-Fehler ' + res.status);
       const data = await res.json();
-      const text = (data.content || []).map((x) => (x.type === 'text' ? x.text : '')).join('');
+      const text = keyless
+        ? String(data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '')
+        : (data.content || []).map((x) => (x.type === 'text' ? x.text : '')).join('');
       const i = text.indexOf('{'), j = text.lastIndexOf('}');
       const obj = JSON.parse(text.slice(i, j + 1));
-      if (!obj || typeof obj !== 'object') throw new Error('Unerwartete Antwort');
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Unerwartete Antwort');
       return obj;
     } finally { clearTimeout(to); }
   }
@@ -1511,7 +1520,7 @@
       settings.ai = e.target.checked; if (settings.ai) settings.auto = true;
       saveSettings(); touch();
     } });
-    const aiRow = h('label', { class: 'set-row switch-row', for: 'ai-sw', hidden: !aiReady() },
+    const aiRow = h('label', { class: 'set-row switch-row', for: 'ai-sw' },
       h('span', { class: 'set-label' }, 'KI prüft die Antworten'), aiSw, h('i', { class: 'switch-ui' }));
     const adminSeg = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Admin' });
     const stepper = h('div', { class: 'stepper' },
