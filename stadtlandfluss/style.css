@@ -548,3 +548,8 @@ body[data-theme="show"] .card-title, body[data-theme="show"] .eval-topic { font-
 .set-col { flex-direction: column; align-items: stretch; }
 .set-col .seg { align-self: flex-start; }
 .seg-btn.is-off { opacity: 0.55; }
+
+/* ---- v1.3: Logo im Kopf ---------------------------------------------------- */
+.brand-badge { padding: 0; overflow: hidden; background: none; }
+.brand-badge img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (display-mode: standalone) { .foot-note { display: none; } }

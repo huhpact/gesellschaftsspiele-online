@@ -1,5 +1,5 @@
 /**
- * Stadt Land Fluss — Version 1.2
+ * Stadt Land Fluss — Version 1.3
  * ---------------------------------------------------------------------------
  * Aufbau (alles in dieser Datei):
  *   1. Konstanten, Hilfsfunktionen, Einstellungen
@@ -26,7 +26,7 @@
   /* ===========================================================================
      1. KONSTANTEN, HILFSFUNKTIONEN, EINSTELLUNGEN
      =========================================================================== */
-  const VERSION = '1.2';
+  const VERSION = '1.3';
   const KEY_SETTINGS = 'slf.settings.v1';
   const KEY_NAME = 'slf.name.v1';
   const KEY_LAST = 'slf.last.v1';         // Mitspieler: zuletzt besuchtes Spiel {code,name} (Wiederverbinden)
@@ -272,6 +272,10 @@
      2b. TÖNE (Web Audio, ohne Dateien) — immer an
      Würfeln beim Buchstaben, Tick-Tack beim Stopp-Countdown, Fanfare am Ende.
      =========================================================================== */
+  /** Vibration (Android): kurze Impulse zu Würfeln, Tick-Tack, Stopp und Sieg – abschaltbar im Design-Menü. */
+  const hapticOn = () => { try { return localStorage.getItem('slf.haptic.v1') !== '0'; } catch (err) { return true; } };
+  const vib = (p) => { try { if (hapticOn() && navigator.vibrate) navigator.vibrate(p); } catch (err) { /* ignore */ } };
+
   const Sfx = (() => {
     let ac = null, master = null, noiseBuf = null;
 
@@ -332,6 +336,7 @@
 
     /** Würfel-Klacken (ein Schritt der Buchstaben-Animation). */
     function clack() {
+      vib(8);
       if (!ensure()) return;
       const t = now(), r = Math.random();
       noise(t, 0.05, { freq: 1500 + r * 1400, q: 1.1, vol: 0.34 });
@@ -339,6 +344,7 @@
     }
     /** Heller Zwei-Ton-Gong, wenn der Buchstabe feststeht. */
     function ding() {
+      vib([30, 40, 70]);
       if (!ensure()) return;
       const t = now() + 0.02;
       [880, 1318.5].forEach((f, i) => tone(f, t + i * 0.1, 1.0, { type: 'triangle', vol: 0.2, lp: 5000, attack: 0.01 }));
@@ -346,6 +352,7 @@
     }
     /** Tick-Tack: abwechselnd hoch und tief, jede Sekunde des Stopp-Countdowns. */
     function tick(n) {
+      vib(14);
       if (!ensure()) return;
       const t = now() + 0.005;
       const hi = n % 2 === 1;
@@ -354,6 +361,7 @@
     }
     /** Summer, wenn die Zeit abgelaufen ist. */
     function buzz() {
+      vib(260);
       if (!ensure()) return;
       const t = now() + 0.005;
       tone(150, t, 0.55, { type: 'sawtooth', vol: 0.22, lp: 700, slideTo: 105 });
@@ -376,6 +384,7 @@
     }
     /** Fanfare + Applaus für die Siegerehrung. */
     function fanfare() {
+      vib([80, 50, 80, 50, 80, 50, 300]);
       if (!ensure()) return;
       const t = now() + 0.02;
       const C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.5;
@@ -439,6 +448,10 @@
     if (meta && t) meta.setAttribute('content', t.meta);
   }
   function initThemeUI() {
+    const hapticBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onClick: () => {
+      try { localStorage.setItem('slf.haptic.v1', hapticOn() ? '0' : '1'); } catch (err) { /* ignore */ }
+      hapticBtn.textContent = 'Vibration: ' + (hapticOn() ? 'an' : 'aus'); vib(40);
+    } }, 'Vibration: ' + (hapticOn() ? 'an' : 'aus'));
     const panel = h('div', { class: 'theme-panel', id: 'theme-panel', hidden: true, role: 'dialog', 'aria-label': 'Design wählen' },
       h('div', { class: 'theme-title' }, 'Design'),
       h('div', { class: 'theme-grid', role: 'radiogroup' }, THEMES.map((t) =>
@@ -446,7 +459,8 @@
           themeId = t.id;
           try { localStorage.setItem(KEY_THEME, themeId); } catch (err) { /* ignore */ }
           applyTheme(); sync();
-        } }, h('span', { class: 'theme-swatch theme-swatch-' + t.id }, h('b'), h('i'), h('u')), h('span', { class: 'theme-name' }, t.label)))));
+        } }, h('span', { class: 'theme-swatch theme-swatch-' + t.id }, h('b'), h('i'), h('u')), h('span', { class: 'theme-name' }, t.label)))),
+      hapticBtn);
     const fab = h('button', { type: 'button', class: 'theme-fab', 'aria-label': 'Design wählen', 'aria-expanded': 'false', title: 'Design', onClick: (e) => {
       e.stopPropagation();
       const open = panel.hidden;
@@ -1345,7 +1359,7 @@
 
   function brandBlock(compact) {
     return h('header', { class: 'brand' + (compact ? ' is-compact' : '') },
-      h('span', { class: 'brand-badge' }, ico('fa-pen-nib')),
+      h('span', { class: 'brand-badge' }, h('img', { src: 'icons/logo.svg', alt: '' })),
       h('div', { class: 'brand-text' },
         h('h1', null, 'Stadt', h('span', { class: 'amp' }, '·'), 'Land', h('span', { class: 'amp' }, '·'), 'Fluss'),
         compact ? null : h('p', { class: 'tagline' }, 'Schnell schreiben – Punkte sammeln')));
@@ -1388,6 +1402,7 @@
           h('button', { class: 'btn btn-link', onClick: () => { try { localStorage.removeItem(KEY_LAST); } catch (err) { /* ignore */ } cur.key = null; render(); } }, 'Vergessen'),
           h('button', { class: 'btn btn-primary', onClick: () => { S.resuming = true; S.failCount = 0; joinGame(last.code, last.name); } }, 'Beitreten'))));
     }
+    const ic = installCard(); if (ic) cards.push(ic);
     root.append(
       brandBlock(),
       ...cards,
@@ -1531,13 +1546,16 @@
     const copyBtn = h('button', { class: 'btn btn-secondary btn-sm', onClick: async () => {
       try { await navigator.clipboard.writeText(joinLink()); toast('Link kopiert.', 'success'); } catch (err) { linkInput.select(); toast('Link markiert – bitte manuell kopieren.'); }
     } }, ico('fa-copy'), 'Link kopieren');
+    const shareBtn = navigator.share ? h('button', { class: 'btn btn-secondary btn-sm', onClick: async () => {
+      try { await navigator.share({ title: 'Stadt Land Fluss', text: 'Komm ins Spiel! Code: ' + net.code.toUpperCase(), url: joinLink() }); } catch (err) { /* abgebrochen */ }
+    } }, ico('fa-share-nodes'), 'Teilen') : null;
 
     root.append(
       brandBlock(true),
       h('div', { class: 'lobby-grid' },
         h('div', { class: 'card' },
           h('h2', { class: 'card-title' }, ico('fa-qrcode'), 'Mitspieler einladen'),
-          qrBox, codeEl, h('div', { class: 'link-row' }, linkInput, copyBtn), statusEl),
+          qrBox, codeEl, h('div', { class: 'link-row' }, linkInput, copyBtn, shareBtn), statusEl),
         h('div', { class: 'card' },
           h('h2', { class: 'card-title' }, ico('fa-users'), 'Spieler'),
           playersEl, hint)),
@@ -2195,11 +2213,43 @@
   /* ===========================================================================
      8. START
      =========================================================================== */
+  /* ---- App-Installation (PWA) & Offline-Start ------------------------------- */
+  let installEvt = null;
+  const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const refreshLanding = () => { if (cur.key === 'landing') { cur.key = null; render(); } };
+  function setupInstall() {
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; refreshLanding(); });
+    window.addEventListener('appinstalled', () => { installEvt = null; toast('App installiert!', 'success'); refreshLanding(); });
+  }
+  function installCard() {
+    if (isStandalone() || (!installEvt && !isIOS())) return null;
+    return h('div', { class: 'card resume-card' },
+      h('h2', { class: 'card-title' }, ico('fa-mobile-screen-button'), 'Als App installieren'),
+      h('p', { class: 'muted' }, installEvt ? 'Tippe unten im Browser auf „Teilen“ und dann auf „Zum Home-Bildschirm“.' : null),
+      installEvt ? h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-primary', onClick: async () => {
+        try { installEvt.prompt(); await installEvt.userChoice; } catch (err) { /* ignore */ }
+        installEvt = null; refreshLanding();
+      } }, ico('fa-download'), 'Installieren')) : null);
+  }
+  function registerSW() {
+    if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (nw) nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) toast('Update geladen – gilt beim nächsten Start.'); });
+      });
+    }).catch(() => { /* ohne Service Worker läuft alles wie bisher */ }));
+  }
+
   function boot() {
+    registerSW();
+    setupInstall();
     initThemeUI();
     applyTheme();
     const m = location.hash.match(/join=([A-Za-z0-9]+)/);
     const last = loadLast();
+    if (!m && /^#(create|join)$/.test(location.hash)) { S.page = location.hash.slice(1); render(); return; }   // App-Verknüpfungen
     if (m) {
       const code = m[1].toLowerCase();
       if (last && last.code === code) { S.resuming = true; joinGame(code, last.name); return; }   // bekanntes Spiel: direkt rein
