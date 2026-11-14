@@ -1167,7 +1167,14 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch((err) => {
+      navigator.serviceWorker.register('service-worker.js').then((reg) => {
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (nw) nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) showToast('Update geladen – gilt beim nächsten Start.');
+          });
+        });
+      }).catch((err) => {
         console.warn('Service Worker Registrierung fehlgeschlagen:', err);
       });
     });
@@ -1182,8 +1189,16 @@
     btnInstall.classList.remove('hidden');
   });
 
+  // iPhone/iPad: kein Install-Dialog möglich -> Button zeigt die Anleitung
+  const isStandaloneApp = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOSDevice && !isStandaloneApp()) btnInstall.classList.remove('hidden');
+
   btnInstall.addEventListener('click', async () => {
-    if (!deferredInstallPrompt) return;
+    if (!deferredInstallPrompt) {
+      if (isIOSDevice) showToast('Tippe unten auf „Teilen“ und dann auf „Zum Home-Bildschirm“.');
+      return;
+    }
     deferredInstallPrompt.prompt();
     const { outcome } = await deferredInstallPrompt.userChoice;
     if (outcome === 'accepted') {
@@ -1211,6 +1226,9 @@
      =========================================================================== */
 
   /* ---- 11a. SOUND ---------------------------------------------------------- */
+  /** Vibration (Android) zur Siegerehrung. */
+  const vib = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (err) { /* ignore */ } };
+
   const Sfx = (() => {
     let ac = null, master = null, noiseBuf = null, drumBus = null, muted = false;
 
@@ -1293,6 +1311,7 @@
     }
 
     function pop() {
+      if (!muted) vib(12);
       if (!ensure()) return;
       const t = now();
       tone(420, t, 0.14, { type: 'sine', vol: 0.22, slideTo: 880, attack: 0.005 });
@@ -1326,6 +1345,7 @@
     }
 
     function reveal(rank) {
+      if (!muted) vib(rank === 1 ? [60, 40, 120] : 45);
       if (!ensure()) return;
       stopDrum();
       const t = now() + 0.02;
@@ -1358,6 +1378,7 @@
     }
 
     function fanfare() {
+      if (!muted) vib([80, 50, 80, 50, 80, 50, 300]);
       if (!ensure()) return;
       stopDrum();
       const t = now() + 0.02;
@@ -2180,7 +2201,7 @@
      Die Bibliotheken (peerjs.min.js, qrcode.js) werden erst bei Bedarf geladen.
      =========================================================================== */
 
-  const APP_VERSION = '1.7';
+  const APP_VERSION = '1.8';
   const SCRIPT_BASE = (document.currentScript && document.currentScript.src)
     ? new URL('.', document.currentScript.src).href : './';
   const scriptPromises = {};

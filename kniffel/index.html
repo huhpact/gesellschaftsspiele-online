@@ -2,13 +2,15 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>Kniffel Punkteblock - gesellschaftsspiele-online.de</title>
   <meta name="description" content="Ein digitaler Kniffel-Punktezettel im Stil eines echten Papier-Blocks.">
   <meta name="theme-color" content="#c8482f">
   <link rel="manifest" href="/kniffel/manifest.json">
-  <link rel="apple-touch-icon" href="/kniffel/dice.svg">
-	<link rel="icon" href="/kniffel/dice.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/kniffel/apple-touch-icon.png">
+  <link rel="icon" href="/kniffel/dice.svg" type="image/svg+xml">
+  <link rel="icon" href="/kniffel/favicon-32.png" sizes="32x32" type="image/png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kniffel">
@@ -17,17 +19,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/kniffel/style.css?v=1.7">
+  <link rel="stylesheet" href="/kniffel/style.css?v=1.8">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-MMJJ9FNSTD"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-MMJJ9FNSTD');
+  </script>
 </head>
- <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MMJJ9FNSTD"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-MMJJ9FNSTD');
-</script>
 <body>
 
   <div class="paper-backdrop" aria-hidden="true"></div>
@@ -205,7 +206,7 @@
   <!-- Toast for feedback messages -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/kniffel/rows-config.js?v=1.7"></script>
-  <script src="/kniffel/main.js?v=1.7"></script>
+  <script src="/kniffel/rows-config.js?v=1.8"></script>
+  <script src="/kniffel/main.js?v=1.8"></script>
 </body>
 </html>

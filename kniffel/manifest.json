@@ -1,1 +1,21 @@
-{"theme_color":"#ffffff","background_color":"#ffffff","icons":[{"purpose":"maskable","sizes":"512x512","src":"icon512_maskable.png","type":"image/png"},{"purpose":"any","sizes":"512x512","src":"icon512_rounded.png","type":"image/png"}],"orientation":"any","display":"standalone","dir":"auto","lang":"de-DE","name":"Kniffelblock","short_name":"Kniffelblock","start_url":"https://huhpact.dev/kniffel"}
+{
+  "name": "Kniffelblock",
+  "short_name": "Kniffelblock",
+  "description": "Digitaler Kniffel-Punktezettel im Stil eines echten Papier-Blocks – mit Doppel-Modus, Multiplayer per QR-Code und Siegerehrung.",
+  "lang": "de-DE",
+  "dir": "auto",
+  "id": "/kniffel/",
+  "start_url": "/kniffel/",
+  "scope": "/kniffel/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#c8482f",
+  "background_color": "#f3ead9",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon512_rounded.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon512_maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "dice.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

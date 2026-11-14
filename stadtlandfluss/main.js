@@ -2226,7 +2226,9 @@
     if (isStandalone() || (!installEvt && !isIOS())) return null;
     return h('div', { class: 'card resume-card' },
       h('h2', { class: 'card-title' }, ico('fa-mobile-screen-button'), 'Als App installieren'),
-      h('p', { class: 'muted' }, installEvt ? 'Tippe unten im Browser auf „Teilen“ und dann auf „Zum Home-Bildschirm“.' : null),
+      h('p', { class: 'muted' }, installEvt
+        ? 'Auf gehts App installieren!'
+        : 'Tippe unten im Browser auf „Teilen“ und dann auf „Zum Home-Bildschirm“.'),
       installEvt ? h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-primary', onClick: async () => {
         try { installEvt.prompt(); await installEvt.userChoice; } catch (err) { /* ignore */ }
         installEvt = null; refreshLanding();
